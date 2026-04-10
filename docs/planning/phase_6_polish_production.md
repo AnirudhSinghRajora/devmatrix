@@ -36,7 +36,46 @@ We have the **Quaternius Ultimate Spaceship Pack (May 2021)** in the repo at:
 - Must be converted to `.glb` (single binary) for production to bundle geometry + textures into one file
 - The 5 color variants per ship map perfectly to team colors or player customization tiers
 
-### 2.2 Ship Models by Hull Type
+### 2.2 Asset Build Pipeline (glTF → GLB Conversion)
+
+The source `.gltf` files reference external PNG textures via relative paths. For web delivery this means N+1 HTTP requests per model (geometry + each texture). Convert to `.glb` which packs everything into a single binary.
+
+**Tool:** `gltf-pipeline` (Cesium, npm package)
+
+```bash
+npm install -D gltf-pipeline
+```
+
+**Build script** (`client/scripts/convert-models.sh`):
+
+```bash
+#!/usr/bin/env bash
+set -euo pipefail
+
+SRC_ROOT="Ultimate Spaceships - May 2021-20260410T165450Z-3-001/Ultimate Spaceships - May 2021"
+OUT_DIR="client/public/models/ships"
+TEX_DIR="client/public/models/ships/textures"
+
+mkdir -p "$OUT_DIR" "$TEX_DIR"
+
+SHIPS=(Bob Challenger Dispatcher Executioner Imperial Insurgent Omen Pancake Spitfire Striker Zenith)
+COLORS=(Blue Green Orange Purple Red)
+
+for ship in "${SHIPS[@]}"; do
+  echo "Converting $ship → GLB..."
+  npx gltf-pipeline -i "$SRC_ROOT/$ship/glTF/$ship.gltf" -o "$OUT_DIR/$ship.glb" --binary
+  # Copy color variant textures for runtime swapping
+  for color in "${COLORS[@]}"; do
+    cp "$SRC_ROOT/$ship/Textures/${ship}_${color}.png" "$TEX_DIR/"
+  done
+done
+
+echo "Done. $(ls "$OUT_DIR"/*.glb | wc -l) GLB models + $(ls "$TEX_DIR"/*.png | wc -l) textures."
+```
+
+**When to run:** Once during initial setup, and again if source models are updated. Not part of `vite build` — the GLB outputs are committed to `client/public/models/`.
+
+### 2.3 Ship Models by Hull Type
 
 Map hull IDs to distinct model files:
 
@@ -63,7 +102,7 @@ const SHIP_COLORS = ['Blue', 'Green', 'Orange', 'Purple', 'Red'] as const;
 // Texture path: /models/ships/textures/{ShipName}_{Color}.png
 ```
 
-### 2.3 GLTF Loading in R3F
+### 2.4 GLTF Loading in R3F
 
 Use drei's `useGLTF` with preloading:
 
@@ -81,7 +120,7 @@ function ShipModel({ hullId, ...props }: { hullId: string }) {
 Object.values(HULL_MODELS).forEach(path => useGLTF.preload(path))
 ```
 
-### 2.4 Ship Customization Visuals
+### 2.5 Ship Customization Visuals
 
 Color tinting per player using the hull material:
 
