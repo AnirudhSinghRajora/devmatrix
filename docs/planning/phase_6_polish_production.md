@@ -8,18 +8,33 @@ Transform the functional game into a visually compelling, production-ready exper
 
 ## 2. 3D Ship Models & Assets
 
-### 2.1 Asset Strategy
+### 2.1 Asset Strategy — RESOLVED
 
-For an indie game, avoid commissioning custom 3D models upfront. Use a tiered approach:
+We have the **Quaternius Ultimate Spaceship Pack (May 2021)** in the repo at:
+`Ultimate Spaceships - May 2021-20260410T165450Z-3-001/Ultimate Spaceships - May 2021/`
 
-| Tier | Source | Cost | Quality |
-|---|---|---|---|
-| **Phase 6a** | Free CC0 assets (Kenney Space Kit, Quaternius, Sketchfab) | $0 | Good enough |
-| **Phase 6b** | AI-generated models (Meshy, Tripo3D, Rodin) | ~$20/mo | Unique style |
-| **Phase 6c** (optional) | Commissioned artist on Fiverr/ArtStation | $50-200/model | Custom, high quality |
+**11 ship models** available, each with glTF + FBX + OBJ + Blend source, and 5 color texture variants (Blue, Green, Orange, Purple, Red):
 
-**Start with Kenney Space Kit** — free, clean low-poly ships, commercially licensed, GLTF format:
-- https://kenney.nl/assets/space-kit
+| Ship | glTF Size | Style Notes |
+|---|---|---|
+| **Striker** | 2.6 MB | Smallest, agile fighter — ideal default/starter hull |
+| **Dispatcher** | 3.0 MB | Utility frame — good for support class |
+| **Insurgent** | 3.1 MB | Asymmetric, menacing — raider/pirate class |
+| **Bob** | 3.5 MB | Compact, rounded — light cruiser |
+| **Executioner** | 4.1 MB | Heavy angular — assault class |
+| **Imperial** | 4.3 MB | Large capital-style — heavy tank |
+| **Omen** | 4.2 MB | Sleek, dark — stealth class |
+| **Pancake** | 4.5 MB | Flat saucer — drone carrier |
+| **Challenger** | 4.5 MB | Multi-engine — medium cruiser |
+| **Zenith** | 4.4 MB | Tall, imposing — command ship |
+| **Spitfire** | 4.5 MB | Aggressive wide-body — gunship |
+
+**Format notes:**
+- glTF 2.0, exported via Khronos Blender I/O v1.5.17
+- Textures are external PNG files (not embedded), one material with `baseColorTexture`
+- Non-metallic PBR (`metallicFactor: 0`)
+- Must be converted to `.glb` (single binary) for production to bundle geometry + textures into one file
+- The 5 color variants per ship map perfectly to team colors or player customization tiers
 
 ### 2.2 Ship Models by Hull Type
 
@@ -27,11 +42,25 @@ Map hull IDs to distinct model files:
 
 ```typescript
 const HULL_MODELS: Record<string, string> = {
-  'hull_basic':   '/models/ships/scout.glb',
-  'hull_medium':  '/models/ships/cruiser.glb',
-  'hull_heavy':   '/models/ships/titan.glb',
-  'hull_stealth': '/models/ships/phantom.glb',
+  'hull_starter':  '/models/ships/Striker.glb',
+  'hull_light':    '/models/ships/Bob.glb',
+  'hull_medium':   '/models/ships/Challenger.glb',
+  'hull_assault':  '/models/ships/Executioner.glb',
+  'hull_heavy':    '/models/ships/Imperial.glb',
+  'hull_stealth':  '/models/ships/Omen.glb',
+  'hull_raider':   '/models/ships/Insurgent.glb',
+  'hull_support':  '/models/ships/Dispatcher.glb',
+  'hull_carrier':  '/models/ships/Pancake.glb',
+  'hull_gunship':  '/models/ships/Spitfire.glb',
+  'hull_command':  '/models/ships/Zenith.glb',
 }
+```
+
+**Color variants** are applied by swapping the texture at runtime rather than loading separate models:
+
+```typescript
+const SHIP_COLORS = ['Blue', 'Green', 'Orange', 'Purple', 'Red'] as const;
+// Texture path: /models/ships/textures/{ShipName}_{Color}.png
 ```
 
 ### 2.3 GLTF Loading in R3F
@@ -42,7 +71,7 @@ Use drei's `useGLTF` with preloading:
 import { useGLTF } from '@react-three/drei'
 
 function ShipModel({ hullId, ...props }: { hullId: string }) {
-  const modelPath = HULL_MODELS[hullId] ?? HULL_MODELS['hull_basic']
+  const modelPath = HULL_MODELS[hullId] ?? HULL_MODELS['hull_starter']
   const { scene } = useGLTF(modelPath)
   
   return <primitive object={scene.clone()} {...props} />
