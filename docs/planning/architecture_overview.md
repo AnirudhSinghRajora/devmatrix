@@ -121,7 +121,7 @@ DevMatrix/
 │
 ├── client/                          # React + R3F frontend
 │   ├── public/
-│   │   └── models/                  # GLTF ship models, skybox textures
+│   │   └── models/                  # GLTF ship models (converted from Quaternius pack), skybox textures
 │   ├── src/
 │   │   ├── main.tsx                 # ReactDOM entry
 │   │   ├── App.tsx                  # Router, auth gate, layout
