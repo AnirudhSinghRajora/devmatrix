@@ -1,0 +1,40 @@
+# Caddyfile — Reverse proxy for DevMatrix
+# Replace devmatrix.example.com with your actual domain.
+# Caddy auto-provisions TLS via Let's Encrypt.
+
+devmatrix.example.com {
+    # Serve the built React client.
+    root * /opt/devmatrix/client/dist
+    file_server
+
+    # WebSocket — must be before reverse_proxy API to avoid path conflicts.
+    handle /ws {
+        reverse_proxy localhost:8080
+    }
+
+    # REST API routes.
+    handle /api/* {
+        reverse_proxy localhost:8080
+    }
+
+    # Monitoring endpoints — restrict to internal/admin.
+    handle /health {
+        reverse_proxy localhost:8080
+    }
+    handle /debug/* {
+        reverse_proxy localhost:8080
+    }
+
+    # SPA fallback: serve index.html for all non-file routes.
+    try_files {path} /index.html
+
+    # Compression.
+    encode gzip zstd
+
+    # Security headers.
+    header {
+        X-Content-Type-Options nosniff
+        X-Frame-Options DENY
+        Referrer-Policy strict-origin-when-cross-origin
+    }
+}

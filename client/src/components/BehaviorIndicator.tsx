@@ -34,26 +34,28 @@ const containerStyle: React.CSSProperties = {
   position: 'absolute',
   bottom: 80,
   left: 12,
-  fontFamily: 'monospace',
+  fontFamily: 'var(--hud-font)',
   fontSize: 13,
-  color: '#0f0',
-  background: 'rgba(0, 0, 0, 0.5)',
-  border: '1px solid rgba(0, 255, 0, 0.2)',
-  borderRadius: 4,
-  padding: '6px 10px',
+  color: 'var(--hud-accent)',
+  background: 'var(--hud-bg)',
+  border: '1px solid var(--hud-border)',
+  borderRadius: 'var(--hud-radius)',
+  padding: '6px 12px',
   pointerEvents: 'none',
   lineHeight: 1.6,
+  boxShadow: 'var(--hud-glow)',
 };
 
 const labelStyle: React.CSSProperties = {
-  fontSize: 11,
-  color: 'rgba(0, 255, 0, 0.5)',
-  letterSpacing: 2,
+  fontSize: 10,
+  color: 'var(--hud-text-dim)',
+  letterSpacing: 3,
   marginBottom: 2,
+  textTransform: 'uppercase',
 };
 
 const emptyStyle: React.CSSProperties = {
-  color: 'rgba(0, 255, 0, 0.35)',
+  color: 'var(--hud-text-dim)',
   fontStyle: 'italic',
 };
 
@@ -63,10 +65,10 @@ const rowStyle: React.CSSProperties = {
 };
 
 const rowLabelStyle: React.CSSProperties = {
-  color: 'rgba(0, 255, 0, 0.5)',
+  color: 'var(--hud-text-dim)',
   minWidth: 30,
 };
 
 const rowValueStyle: React.CSSProperties = {
-  color: '#0f0',
+  color: 'var(--hud-accent)',
 };

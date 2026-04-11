@@ -13,12 +13,12 @@ function BarRow({
 }) {
   const pct = max > 0 ? (value / max) * 100 : 0;
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
-      <span style={{ width: 16, fontSize: 11, textAlign: 'right' }}>{label}</span>
-      <div style={{ flex: 1, background: '#222', height: 6, borderRadius: 3, overflow: 'hidden' }}>
-        <div style={{ width: `${pct}%`, height: '100%', background: color, borderRadius: 3, transition: 'width 0.1s' }} />
+    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
+      <span style={{ width: 18, fontSize: 10, textAlign: 'right', color: 'var(--hud-text-dim)', letterSpacing: 1 }}>{label}</span>
+      <div style={{ flex: 1, background: 'rgba(0,200,255,0.08)', height: 5, borderRadius: 3, overflow: 'hidden' }}>
+        <div style={{ width: `${pct}%`, height: '100%', background: color, borderRadius: 3, transition: 'width 0.1s', boxShadow: `0 0 6px ${color}` }} />
       </div>
-      <span style={{ width: 42, fontSize: 11, textAlign: 'right' }}>
+      <span style={{ width: 44, fontSize: 10, textAlign: 'right', color: 'var(--hud-text-dim)' }}>
         {Math.ceil(value)}/{max}
       </span>
     </div>
@@ -31,7 +31,6 @@ export default function HealthPanel() {
 
   if (!myPlayerId) return null;
 
-  // Sort: own ship first, then others by id.
   const sorted = Array.from(entities.values()).sort((a, b) => {
     if (a.id === myPlayerId) return -1;
     if (b.id === myPlayerId) return 1;
@@ -44,11 +43,11 @@ export default function HealthPanel() {
         position: 'absolute',
         top: 12,
         right: 12,
-        color: '#ddd',
-        fontFamily: 'monospace',
+        color: 'var(--hud-text)',
+        fontFamily: 'var(--hud-font)',
         fontSize: 12,
         pointerEvents: 'none',
-        width: 180,
+        width: 190,
       }}
     >
       {sorted.map((e) => {
@@ -57,20 +56,21 @@ export default function HealthPanel() {
           <div
             key={e.id}
             style={{
-              background: 'rgba(0,0,0,0.6)',
-              borderRadius: 4,
-              padding: '4px 8px',
+              background: 'var(--hud-bg)',
+              borderRadius: 'var(--hud-radius)',
+              padding: '5px 10px',
               marginBottom: 4,
-              border: isOwn ? '1px solid #0f0' : '1px solid transparent',
-              opacity: e.alive ? 1 : 0.35,
+              border: isOwn ? '1px solid var(--hud-accent)' : '1px solid var(--hud-border)',
+              boxShadow: isOwn ? 'var(--hud-glow)' : 'none',
+              opacity: e.alive ? 1 : 0.3,
             }}
           >
-            <div style={{ fontSize: 11, marginBottom: 2, color: isOwn ? '#0f0' : '#aaa' }}>
-              {isOwn ? 'YOU' : (e.username || e.id).slice(0, 12)}
-              {!e.alive && <span style={{ color: '#f44', marginLeft: 4 }}>DEAD</span>}
+            <div style={{ fontSize: 10, marginBottom: 3, color: isOwn ? 'var(--hud-accent)' : 'var(--hud-text-dim)', letterSpacing: 1 }}>
+              {isOwn ? '▸ YOU' : (e.username || e.id).slice(0, 12)}
+              {!e.alive && <span style={{ color: 'var(--hud-red)', marginLeft: 6 }}>DEAD</span>}
             </div>
-            <BarRow label="HP" value={e.health} max={e.maxHealth} color="#0f0" />
-            <BarRow label="SH" value={e.shield} max={e.maxShield} color="#0af" />
+            <BarRow label="HP" value={e.health} max={e.maxHealth} color="var(--hud-green)" />
+            <BarRow label="SH" value={e.shield} max={e.maxShield} color="var(--hud-accent)" />
           </div>
         );
       })}

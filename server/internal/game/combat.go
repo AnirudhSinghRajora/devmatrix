@@ -13,31 +13,106 @@ func (e *Engine) executeCombat(ship *Ship, b *BehaviorBlock) {
 		ship.PrimaryWeapon.CoolTimer -= e.dt
 	}
 
-	if b.Combat != "fire_at" {
+	switch b.Combat {
+	case "fire_at":
+		e.combatFireAt(ship, b)
+	case "burst_fire":
+		e.combatBurstFire(ship, b)
+	case "fire_at_will":
+		e.combatFireAtWill(ship)
+	}
+}
+
+// combatFireAt fires at the specified target when in range and off cooldown.
+func (e *Engine) combatFireAt(ship *Ship, b *BehaviorBlock) {
+	target := e.resolveTarget(ship, b.CombatParams.Target)
+	if target == nil || !target.IsAlive {
 		return
 	}
+	e.tryFire(ship, target)
+}
 
+// combatBurstFire fires 3 rapid shots (0.15 s apart) then pauses for 1.5 s.
+func (e *Engine) combatBurstFire(ship *Ship, b *BehaviorBlock) {
 	target := e.resolveTarget(ship, b.CombatParams.Target)
 	if target == nil || !target.IsAlive {
 		return
 	}
 
-	w := &ship.PrimaryWeapon
+	// Tick burst pause timer.
+	if ship.BurstTimer > 0 {
+		ship.BurstTimer -= e.dt
+		return
+	}
 
-	// Still on cooldown.
+	w := &ship.PrimaryWeapon
 	if w.CoolTimer > 0 {
 		return
 	}
 
-	// Range check.
 	dist := ship.Position.DistTo(target.Position)
 	if dist > w.Range {
 		return
 	}
 
-	// Fire.
-	w.CoolTimer = w.Cooldown
+	// Fire one shot in the burst.
+	w.CoolTimer = 0.15 // rapid fire interval
+	if w.Speed == 0 {
+		e.processHitscan(ship, target, w)
+	} else {
+		e.spawnProjectile(ship, target, w)
+	}
 
+	ship.BurstCount++
+	if ship.BurstCount >= 3 {
+		ship.BurstCount = 0
+		ship.BurstTimer = 1.5 // pause between bursts
+		w.CoolTimer = 0       // burst timer controls the pause, not weapon cooldown
+	}
+}
+
+// combatFireAtWill fires at whatever enemy is closest and in range,
+// switching targets opportunistically each shot.
+func (e *Engine) combatFireAtWill(ship *Ship) {
+	w := &ship.PrimaryWeapon
+	if w.CoolTimer > 0 {
+		return
+	}
+
+	// Find the closest in-range enemy.
+	var best *Ship
+	var bestDist float32
+	for _, s := range e.state.Ships {
+		if s.ID == ship.ID || !s.IsAlive {
+			continue
+		}
+		d := ship.Position.DistTo(s.Position)
+		if d > w.Range {
+			continue
+		}
+		if best == nil || d < bestDist {
+			best = s
+			bestDist = d
+		}
+	}
+
+	if best == nil {
+		return
+	}
+	e.tryFire(ship, best)
+}
+
+// tryFire performs the actual fire sequence against a specific target.
+func (e *Engine) tryFire(ship *Ship, target *Ship) {
+	w := &ship.PrimaryWeapon
+	if w.CoolTimer > 0 {
+		return
+	}
+	dist := ship.Position.DistTo(target.Position)
+	if dist > w.Range {
+		return
+	}
+	w.CoolTimer = w.Cooldown
 	if w.Speed == 0 {
 		e.processHitscan(ship, target, w)
 	} else {
@@ -45,7 +120,7 @@ func (e *Engine) executeCombat(ship *Ship, b *BehaviorBlock) {
 	}
 }
 
-// processHitscan performs an instant ray-sphere hit test (for lasers).
+// processHitscan performs an instant ray test against compound hit-shape (for lasers).
 func (e *Engine) processHitscan(shooter, target *Ship, w *Weapon) {
 	dir := target.Position.Sub(shooter.Position).Normalize()
 
@@ -53,7 +128,11 @@ func (e *Engine) processHitscan(shooter, target *Ship, w *Weapon) {
 		dir = applySpread(dir, w.Spread)
 	}
 
-	hit := rayHitsSphere(shooter.Position, dir, target.Position, target.CollisionRadius)
+	shape := target.HitShape
+	if len(shape) == 0 {
+		shape = defaultShape
+	}
+	hit := compoundRayHit(shooter.Position, dir, target.Position, target.Rotation, shape)
 
 	if hit {
 		e.applyDamage(target, w.Damage, shooter.ID)
@@ -101,14 +180,18 @@ func (e *Engine) updateProjectiles() {
 
 		p.Position = p.Position.Add(p.Velocity.Scale(e.dt))
 
-		// Check collision with nearby ships.
+		// Check collision with nearby ships using compound hit-shapes.
 		nearby := e.grid.GetNearby(p.Position, p.Radius+10)
 		hit := false
 		for _, ship := range nearby {
 			if ship.ID == p.OwnerID || !ship.IsAlive {
 				continue
 			}
-			if spheresOverlap(p.Position, p.Radius, ship.Position, ship.CollisionRadius) {
+			shape := ship.HitShape
+			if len(shape) == 0 {
+				shape = defaultShape
+			}
+			if compoundSphereHit(p.Position, p.Radius, ship.Position, ship.Rotation, shape) {
 				e.applyDamage(ship, p.Damage, p.OwnerID)
 				hit = true
 				break
@@ -175,6 +258,8 @@ func (e *Engine) shieldMultiplier(target *Ship, attackerID string) float32 {
 			return 1.5 // attacker is behind — more shield absorption
 		}
 		return 0.5
+	case "shield_omni":
+		return 1.2 // good absorption from all directions
 	default: // "shield_balanced" or empty
 		return 1
 	}
@@ -234,7 +319,11 @@ func (e *Engine) updateShields(ship *Ship) {
 		return
 	}
 	if ship.Shield < ship.MaxShield {
-		ship.Shield += ship.ShieldRegen * e.dt
+		regen := ship.ShieldRegen
+		if ship.CurrentDefense == "shield_omni" {
+			regen *= 0.8 // omni shield drains 20% faster
+		}
+		ship.Shield += regen * e.dt
 		if ship.Shield > ship.MaxShield {
 			ship.Shield = ship.MaxShield
 		}
@@ -258,6 +347,9 @@ func (e *Engine) updateRespawns() {
 			ship.ShieldTimer = 0
 			ship.PrimaryWeapon.CoolTimer = 0
 			ship.Behavior = nil // clear behavior — player must re-prompt
+
+			// Reset prompt cooldown so player can immediately issue orders.
+			e.cooldown.Remove(ship.ID)
 
 			e.state.Events = append(e.state.Events, GameEvent{
 				Type:   EvtRespawn,

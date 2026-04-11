@@ -1,3 +1,17 @@
+:root {
+  --hud-bg: rgba(0, 8, 16, 0.75);
+  --hud-border: rgba(0, 200, 255, 0.2);
+  --hud-accent: #00ccff;
+  --hud-green: #00ff88;
+  --hud-red: #ff4444;
+  --hud-yellow: #ffcc00;
+  --hud-text: #cceeff;
+  --hud-text-dim: rgba(200, 230, 255, 0.5);
+  --hud-font: 'Courier New', Courier, monospace;
+  --hud-radius: 6px;
+  --hud-glow: 0 0 12px rgba(0, 200, 255, 0.15);
+}
+
 *, *::before, *::after {
   margin: 0;
   padding: 0;
@@ -9,4 +23,11 @@ html, body, #root {
   height: 100%;
   overflow: hidden;
   background: #000;
+  font-family: var(--hud-font);
+  color: var(--hud-text);
+}
+
+::selection {
+  background: rgba(0, 200, 255, 0.3);
+  color: #fff;
 }

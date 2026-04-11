@@ -9,6 +9,8 @@ export default function PromptInput() {
   const connected = useGameStore((s) => s.connected);
   const errorMessage = useGameStore((s) => s.errorMessage);
   const errorCooldown = useGameStore((s) => s.errorCooldown);
+  const myDead = useGameStore((s) => s.myDeathTime !== null);
+  const justRespawned = useGameStore((s) => s.justRespawned);
 
   const [text, setText] = useState('');
   const [cooldown, setCooldown] = useState(0);
@@ -39,14 +41,21 @@ export default function PromptInput() {
     return () => clearTimeout(id);
   }, [errorMessage]);
 
+  // Reset cooldown on respawn (server also clears its cooldown tracker).
+  useEffect(() => {
+    if (justRespawned) {
+      setCooldown(0);
+    }
+  }, [justRespawned]);
+
   const submit = useCallback(() => {
     const trimmed = text.trim();
-    if (!trimmed || cooldown > 0 || !connected) return;
+    if (!trimmed || cooldown > 0 || !connected || myDead) return;
 
     sendPrompt(trimmed);
     setText('');
     setCooldown(COOLDOWN_SECONDS);
-  }, [text, cooldown, connected]);
+  }, [text, cooldown, connected, myDead]);
 
   const onKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -58,7 +67,7 @@ export default function PromptInput() {
     [submit],
   );
 
-  const disabled = !connected || cooldown > 0;
+  const disabled = !connected || cooldown > 0 || myDead;
 
   return (
     <div style={containerStyle}>
@@ -75,9 +84,11 @@ export default function PromptInput() {
           placeholder={
             !connected
               ? 'Connecting…'
-              : cooldown > 0
-                ? `Cooldown: ${cooldown}s`
-                : 'Command your ship…'
+              : myDead
+                ? 'Waiting for respawn…'
+                : cooldown > 0
+                  ? `Cooldown: ${cooldown}s`
+                  : 'Command your ship…'
           }
           style={inputStyle}
           spellCheck={false}
@@ -105,7 +116,7 @@ const containerStyle: React.CSSProperties = {
   flexDirection: 'column',
   alignItems: 'center',
   gap: 6,
-  fontFamily: 'monospace',
+  fontFamily: 'var(--hud-font)',
   zIndex: 10,
 };
 
@@ -116,40 +127,42 @@ const rowStyle: React.CSSProperties = {
 };
 
 const inputStyle: React.CSSProperties = {
-  width: 400,
-  padding: '8px 12px',
-  background: 'rgba(0, 0, 0, 0.7)',
-  border: '1px solid rgba(0, 255, 0, 0.4)',
-  borderRadius: 4,
-  color: '#0f0',
-  fontFamily: 'monospace',
+  width: 420,
+  padding: '8px 14px',
+  background: 'var(--hud-bg)',
+  border: '1px solid var(--hud-border)',
+  borderRadius: 'var(--hud-radius)',
+  color: 'var(--hud-accent)',
+  fontFamily: 'var(--hud-font)',
   fontSize: 14,
   outline: 'none',
+  boxShadow: 'var(--hud-glow)',
 };
 
 const charCountStyle: React.CSSProperties = {
-  color: 'rgba(0, 255, 0, 0.5)',
-  fontSize: 12,
+  color: 'var(--hud-text-dim)',
+  fontSize: 11,
   minWidth: 50,
   textAlign: 'right',
 };
 
 const buttonStyle: React.CSSProperties = {
-  padding: '8px 16px',
-  background: 'rgba(0, 255, 0, 0.15)',
-  border: '1px solid rgba(0, 255, 0, 0.4)',
-  borderRadius: 4,
-  color: '#0f0',
-  fontFamily: 'monospace',
+  padding: '8px 18px',
+  background: 'rgba(0, 200, 255, 0.12)',
+  border: '1px solid var(--hud-border)',
+  borderRadius: 'var(--hud-radius)',
+  color: 'var(--hud-accent)',
+  fontFamily: 'var(--hud-font)',
   fontSize: 14,
   cursor: 'pointer',
+  letterSpacing: 1,
 };
 
 const errorStyle: React.CSSProperties = {
-  color: '#f44',
-  fontSize: 13,
-  padding: '4px 10px',
-  background: 'rgba(255, 0, 0, 0.1)',
-  borderRadius: 4,
-  border: '1px solid rgba(255, 0, 0, 0.3)',
+  color: 'var(--hud-red)',
+  fontSize: 12,
+  padding: '4px 12px',
+  background: 'rgba(255, 0, 0, 0.08)',
+  borderRadius: 'var(--hud-radius)',
+  border: '1px solid rgba(255, 68, 68, 0.3)',
 };

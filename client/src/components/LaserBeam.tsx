@@ -12,7 +12,8 @@ interface LaserBeamProps {
 const LASER_DURATION = 0.3; // seconds
 
 export default function LaserBeam({ from, to, hit, time }: LaserBeamProps) {
-  const meshRef = useRef<THREE.Mesh>(null);
+  const coreRef = useRef<THREE.Mesh>(null);
+  const glowRef = useRef<THREE.Mesh>(null);
 
   const { midpoint, length, quaternion } = useMemo(() => {
     const start = new THREE.Vector3(...from);
@@ -26,23 +27,42 @@ export default function LaserBeam({ from, to, hit, time }: LaserBeamProps) {
   }, [from, to]);
 
   useFrame(() => {
-    const mesh = meshRef.current;
-    if (!mesh) return;
+    const core = coreRef.current;
+    const glow = glowRef.current;
+    if (!core || !glow) return;
     const elapsed = (performance.now() - time) / 1000;
     const opacity = Math.max(0, 1 - elapsed / LASER_DURATION);
-    const mat = mesh.material as THREE.MeshBasicMaterial;
-    mat.opacity = opacity;
-    mesh.visible = opacity > 0;
+    (core.material as THREE.MeshBasicMaterial).opacity = opacity;
+    (glow.material as THREE.MeshBasicMaterial).opacity = opacity * 0.4;
+    core.visible = opacity > 0;
+    glow.visible = opacity > 0;
   });
 
+  const coreColor = hit ? '#ff4444' : '#ff8844';
+  const glowColor = hit ? '#ff0000' : '#ff6622';
+
   return (
-    <mesh ref={meshRef} position={midpoint} quaternion={quaternion}>
-      <cylinderGeometry args={[0.06, 0.06, length, 4]} />
-      <meshBasicMaterial
-        color={hit ? '#ff2222' : '#ff6644'}
-        transparent
-        depthWrite={false}
-      />
-    </mesh>
+    <group position={midpoint} quaternion={quaternion}>
+      {/* Inner bright core */}
+      <mesh ref={coreRef}>
+        <cylinderGeometry args={[0.05, 0.05, length, 6]} />
+        <meshBasicMaterial
+          color={coreColor}
+          transparent
+          depthWrite={false}
+          blending={THREE.AdditiveBlending}
+        />
+      </mesh>
+      {/* Outer glow */}
+      <mesh ref={glowRef}>
+        <cylinderGeometry args={[0.2, 0.2, length, 6]} />
+        <meshBasicMaterial
+          color={glowColor}
+          transparent
+          depthWrite={false}
+          blending={THREE.AdditiveBlending}
+        />
+      </mesh>
+    </group>
   );
 }

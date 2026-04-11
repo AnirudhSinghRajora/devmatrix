@@ -57,6 +57,25 @@ type Quaternion struct {
 	X, Y, Z, W float32
 }
 
+// Rotate transforms a Vec3 by this unit quaternion: q * v * q⁻¹.
+func (q Quaternion) Rotate(v Vec3) Vec3 {
+	// Optimised formula: v' = v + 2w(q×v) + 2(q×(q×v))
+	tx := 2 * (q.Y*v.Z - q.Z*v.Y)
+	ty := 2 * (q.Z*v.X - q.X*v.Z)
+	tz := 2 * (q.X*v.Y - q.Y*v.X)
+	return Vec3{
+		X: v.X + q.W*tx + (q.Y*tz - q.Z*ty),
+		Y: v.Y + q.W*ty + (q.Z*tx - q.X*tz),
+		Z: v.Z + q.W*tz + (q.X*ty - q.Y*tx),
+	}
+}
+
+// CollisionSphere is one element of a compound hit-shape.
+type CollisionSphere struct {
+	Offset Vec3    // local-space offset from ship centre
+	Radius float32 // sphere radius
+}
+
 // Weapon represents a ship-mounted weapon.
 type Weapon struct {
 	Type      string  // "laser", "plasma"
@@ -94,6 +113,7 @@ type Ship struct {
 	MaxSpeed       float32
 
 	// Physics tuning.
+	Mass     float32 // kg, used for collision impulse resolution
 	Thrust   float32 // acceleration, units/s²
 	Drag     float32 // linear damping coefficient, 1/s
 	TurnRate float32 // rotation speed, rad/s
@@ -103,6 +123,19 @@ type Ship struct {
 	WanderDir       Vec3
 	WanderTimer     float32
 	PatrolIndex     int
+	DodgeTimer      float32 // dodge: countdown to next jink direction
+	DodgeDir        Vec3    // dodge: current lateral direction
+	BarrelAngle     float32 // barrel_roll: current spiral angle
+	JukeTimer       float32 // juke: countdown between jukes
+	JukePhase       int     // juke: 0=normal, 1=cutting
+	JukeDir         Vec3    // juke: direction of current cut
+	ZigTimer        float32 // zigzag: alternation timer
+	ZigLeft         bool    // zigzag: current side
+	FlankPhase      int     // flank: 0=positioning, 1=attacking
+	AnchorPos       Vec3    // anchor: held position
+	AnchorSet       bool    // anchor: whether position is captured
+	BurstCount      int     // burst_fire: shots in current burst
+	BurstTimer      float32 // burst_fire: pause countdown
 
 	// Combat.
 	Health          float32
@@ -115,10 +148,11 @@ type Ship struct {
 	PrimaryWeapon   Weapon
 	IsAlive         bool
 	RespawnTimer    float32 // countdown when dead
-	CollisionRadius float32
-	LastDamagedBy   string  // for kill credit
-	AITier          int     // LLM behavior tier (1-5)
-	HullID          string  // item ID for model selection
+	CollisionRadius float32          // bounding radius for broad-phase
+	HitShape        []CollisionSphere // compound narrow-phase hitbox
+	LastDamagedBy   string            // for kill credit
+	AITier          int               // LLM behavior tier (1-5)
+	HullID          string            // item ID for model selection
 }
 
 // HealthPct returns current health as a percentage 0–100.

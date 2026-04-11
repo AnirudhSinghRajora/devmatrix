@@ -18,11 +18,15 @@ var validOperators = map[string]bool{
 }
 
 var validFields = map[string]bool{
-	"self.health_pct":    true,
-	"self.shield_pct":    true,
-	"target.distance":    true,
-	"target.health_pct":  true,
-	"enemy_count":        true,
+	"self.health_pct":       true,
+	"self.shield_pct":       true,
+	"self.speed":            true,
+	"self.speed_pct":        true,
+	"target.distance":       true,
+	"target.health_pct":     true,
+	"target.speed":          true,
+	"enemy_count":           true,
+	"incoming_projectiles":  true,
 }
 
 // ParseCondition parses a string like "self.health_pct < 30" into a Condition.
@@ -65,11 +69,15 @@ func buildCondition(field, op, value string) (*Condition, error) {
 
 // ShipContext provides runtime values for condition evaluation.
 type ShipContext struct {
-	HealthPct   float64
-	ShieldPct   float64
-	TargetDist  float64
-	TargetHPPct float64
-	EnemyCount  int
+	HealthPct           float64
+	ShieldPct           float64
+	Speed               float64
+	SpeedPct            float64
+	TargetDist          float64
+	TargetHPPct         float64
+	TargetSpeed         float64
+	EnemyCount          int
+	IncomingProjectiles int
 }
 
 // Evaluate returns true if the condition is satisfied by the given context.
@@ -97,12 +105,20 @@ func (ctx *ShipContext) resolve(field string) float64 {
 		return ctx.HealthPct
 	case "self.shield_pct":
 		return ctx.ShieldPct
+	case "self.speed":
+		return ctx.Speed
+	case "self.speed_pct":
+		return ctx.SpeedPct
 	case "target.distance":
 		return ctx.TargetDist
 	case "target.health_pct":
 		return ctx.TargetHPPct
+	case "target.speed":
+		return ctx.TargetSpeed
 	case "enemy_count":
 		return float64(ctx.EnemyCount)
+	case "incoming_projectiles":
+		return float64(ctx.IncomingProjectiles)
 	default:
 		return 0
 	}

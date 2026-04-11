@@ -2,6 +2,7 @@ package game
 
 import (
 	"context"
+	"sync/atomic"
 	"time"
 
 	"github.com/DevMatrix/server/internal/db"
@@ -41,6 +42,30 @@ type Engine struct {
 	itemCache *db.ItemCache
 	dbWriter  *db.DBWriter
 	queries   *db.Queries
+
+	// Monitoring (atomic for thread-safe reads from HTTP handler).
+	lastTickNanos  atomic.Int64
+	playerCount    atomic.Int32
+}
+
+// EngineStats holds a snapshot of engine metrics for the monitoring endpoint.
+type EngineStats struct {
+	Tick        uint64  `json:"tick"`
+	TickRate    int     `json:"tick_rate"`
+	LastTickMs  float64 `json:"last_tick_ms"`
+	PlayerCount int     `json:"player_count"`
+	Clients     int     `json:"clients"`
+}
+
+// Stats returns a thread-safe snapshot of engine metrics.
+func (e *Engine) Stats() EngineStats {
+	return EngineStats{
+		Tick:        atomic.LoadUint64(&e.tick),
+		TickRate:    e.tickRate,
+		LastTickMs:  float64(e.lastTickNanos.Load()) / 1e6,
+		PlayerCount: int(e.playerCount.Load()),
+		Clients:     e.hub.ClientCount(),
+	}
 }
 
 // NewEngine creates a game engine wired to the hub, input channels, and LLM pipeline.
@@ -97,6 +122,9 @@ func (e *Engine) Run(ctx context.Context) {
 			e.buildAndBroadcast()
 
 			elapsed := time.Since(start)
+			e.lastTickNanos.Store(elapsed.Nanoseconds())
+			e.playerCount.Store(int32(len(e.state.Ships)))
+
 			if elapsed > interval {
 				log.Warn().
 					Dur("elapsed", elapsed).
@@ -168,7 +196,8 @@ func (e *Engine) buildShipForPlayer(req network.JoinRequest) *Ship {
 				ship.MaxSpeed = hull.MaxSpeed
 				ship.Thrust = hull.Thrust
 				ship.CollisionRadius = hull.CollisionRadius
-				ship.Drag = 0.5
+				ship.Mass = hull.MaxHealth * 0.1 // derive mass from hull HP
+				ship.Drag = 0.3
 				ship.TurnRate = 3.0
 				ship.MaxShield = shld.MaxShield
 				ship.Shield = shld.MaxShield
@@ -180,6 +209,8 @@ func (e *Engine) buildShipForPlayer(req network.JoinRequest) *Ship {
 				}
 				ship.AITier = profile.AITier
 				ship.HullID = profile.HullID
+				ship.HitShape = hullShapeFor(profile.HullID)
+				ship.CollisionRadius = boundingRadius(ship.HitShape)
 				return ship
 			}
 			log.Warn().Err(err).Str("player", req.PlayerID).Msg("failed to load profile, using defaults")
@@ -189,7 +220,8 @@ func (e *Engine) buildShipForPlayer(req network.JoinRequest) *Ship {
 	// Anonymous / fallback defaults.
 	ship.MaxSpeed = 50
 	ship.Thrust = 40
-	ship.Drag = 0.5
+	ship.Mass = 10
+	ship.Drag = 0.3
 	ship.TurnRate = 3.0
 	ship.Health = 100
 	ship.MaxHealth = 100
@@ -201,6 +233,8 @@ func (e *Engine) buildShipForPlayer(req network.JoinRequest) *Ship {
 	ship.CollisionRadius = 2.0
 	ship.AITier = 1
 	ship.HullID = "hull_basic"
+	ship.HitShape = hullShapeFor("hull_basic")
+	ship.CollisionRadius = boundingRadius(ship.HitShape)
 	return ship
 }
 
@@ -251,6 +285,18 @@ func (e *Engine) drainLLMResults() {
 			// Reset per-behavior transient state.
 			ship.WanderTimer = 0
 			ship.PatrolIndex = 0
+			ship.DodgeTimer = 0
+			ship.DodgeDir = Vec3{}
+			ship.BarrelAngle = 0
+			ship.JukeTimer = 0
+			ship.JukePhase = 0
+			ship.JukeDir = Vec3{}
+			ship.ZigTimer = 0
+			ship.ZigLeft = false
+			ship.FlankPhase = 0
+			ship.AnchorSet = false
+			ship.BurstCount = 0
+			ship.BurstTimer = 0
 			e.sendBehaviorConfirmation(result.PlayerID, result.Behavior)
 			log.Info().
 				Str("player", result.PlayerID).
@@ -355,6 +401,9 @@ func (e *Engine) updateEntities() {
 		// 3. Shield regeneration.
 		e.updateShields(ship)
 	}
+
+	// 3b. Ship-to-ship collision detection & response.
+	e.resolveShipCollisions()
 
 	// 4. Projectile physics + collision.
 	e.updateProjectiles()

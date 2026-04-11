@@ -1,8 +1,11 @@
-import { useRef } from 'react';
+import { useRef, useMemo } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { Stars } from '@react-three/drei';
+import { EffectComposer, Bloom } from '@react-three/postprocessing';
+import * as THREE from 'three';
 import { useGameStore } from '../store/gameStore';
 import Ship from './Ship';
+import EngineTrail from './EngineTrail';
 import CameraFollow from './CameraFollow';
 import LaserBeam from './LaserBeam';
 import Explosion from './Explosion';
@@ -58,6 +61,15 @@ function CombatVfx() {
   );
 }
 
+function ArenaBoundary() {
+  const geo = useMemo(() => new THREE.EdgesGeometry(new THREE.BoxGeometry(500, 100, 500)), []);
+  return (
+    <lineSegments geometry={geo}>
+      <lineBasicMaterial color="#1a3a5c" transparent opacity={0.3} />
+    </lineSegments>
+  );
+}
+
 export default function Scene() {
   const entityIds = useEntityIds();
   const myPlayerId = useGameStore((s) => s.myPlayerId);
@@ -67,11 +79,13 @@ export default function Scene() {
       camera={{ position: [0, 15, 30], fov: 60, near: 0.1, far: 2000 }}
       style={{ width: '100vw', height: '100vh' }}
     >
-      <ambientLight intensity={0.3} />
-      <directionalLight position={[10, 10, 5]} intensity={1} />
-      <Stars radius={300} depth={80} count={3000} factor={4} fade />
+      <ambientLight intensity={0.25} />
+      <directionalLight position={[10, 10, 5]} intensity={0.8} />
+      <directionalLight position={[-5, -3, -10]} intensity={0.15} color="#4488ff" />
+      <Stars radius={400} depth={100} count={5000} factor={5} fade />
       <CameraFollow />
-      <gridHelper args={[1000, 200, '#222', '#111']} />
+      <gridHelper args={[1000, 200, '#1a1a2e', '#0a0a15']} />
+      <ArenaBoundary />
 
       {entityIds.map((id) => (
         <Ship
@@ -80,7 +94,18 @@ export default function Scene() {
           isOwn={id === myPlayerId}
         />
       ))}
+      {entityIds.map((id) => (
+        <EngineTrail key={`trail-${id}`} entityId={id} />
+      ))}
       <CombatVfx />
+      <EffectComposer>
+        <Bloom
+          luminanceThreshold={0.6}
+          luminanceSmoothing={0.4}
+          intensity={0.8}
+          mipmapBlur
+        />
+      </EffectComposer>
     </Canvas>
   );
 }

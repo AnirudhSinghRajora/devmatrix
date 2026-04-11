@@ -67,9 +67,22 @@ func validateBehaviorBlock(b *BehaviorBlock) error {
 		b.MovementParams.Radius = clampF32(b.MovementParams.Radius, 30, 500)
 	}
 
-	// Validate direction for strafe.
-	if b.Movement == "strafe" && b.MovementParams.Direction == "" {
-		b.MovementParams.Direction = "right" // default
+	// Validate direction for strafe, flank, zigzag.
+	switch b.Movement {
+	case "strafe":
+		if b.MovementParams.Direction == "" {
+			b.MovementParams.Direction = "right"
+		}
+	case "flank":
+		d := b.MovementParams.Direction
+		if d != "left" && d != "right" && d != "behind" {
+			b.MovementParams.Direction = "behind"
+		}
+	case "zigzag":
+		d := b.MovementParams.Direction
+		if d != "toward" && d != "away" {
+			b.MovementParams.Direction = "toward"
+		}
 	}
 
 	// Validate patrol waypoints.
