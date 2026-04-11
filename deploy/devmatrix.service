@@ -7,12 +7,12 @@ Wants=postgresql.service
 Type=simple
 User=devmatrix
 Group=devmatrix
-WorkingDirectory=/opt/devmatrix/server
+WorkingDirectory=/home/Anirudh/devmatrix/server
 
-ExecStart=/opt/devmatrix/server/devmatrix
+ExecStart=/home/Anirudh/devmatrix/server/devmatrix
 
 # Environment
-EnvironmentFile=/opt/devmatrix/server/.env
+EnvironmentFile=/home/Anirudh/devmatrix/server/.env
 
 # Restart on failure
 Restart=on-failure
@@ -25,7 +25,7 @@ LimitNOFILE=65536
 NoNewPrivileges=true
 ProtectSystem=strict
 ProtectHome=true
-ReadWritePaths=/opt/devmatrix/server
+ReadWritePaths=/home/Anirudh/devmatrix/server
 PrivateTmp=true
 
 [Install]

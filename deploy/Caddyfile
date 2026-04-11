@@ -4,7 +4,7 @@
 
 devmatrix.example.com {
     # Serve the built React client.
-    root * /opt/devmatrix/client/dist
+    root * /home/Anirudh/devmatrix/client/dist
     file_server
 
     # WebSocket — must be before reverse_proxy API to avoid path conflicts.

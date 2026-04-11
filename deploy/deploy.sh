@@ -6,7 +6,7 @@ set -euo pipefail
 #   host: SSH target (default: devmatrix-server)
 
 HOST="${1:-devmatrix-server}"
-REMOTE_DIR="/opt/devmatrix"
+REMOTE_DIR="/home/Anirudh/devmatrix"
 PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
 echo "=== DevMatrix Deploy ==="
