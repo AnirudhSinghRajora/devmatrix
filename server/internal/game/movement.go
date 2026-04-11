@@ -34,10 +34,35 @@ func (e *Engine) executeBehavior(ship *Ship) {
 
 // buildShipContext gathers runtime values for condition evaluation.
 func (e *Engine) buildShipContext(ship *Ship) *ShipContext {
+	speed := float64(ship.Velocity.Length())
+	maxSpd := float64(ship.MaxSpeed)
+	speedPct := 0.0
+	if maxSpd > 0 {
+		speedPct = speed / maxSpd * 100
+	}
+
 	ctx := &ShipContext{
 		HealthPct:  float64(ship.HealthPct()),
 		ShieldPct:  float64(ship.ShieldPct()),
+		Speed:      speed,
+		SpeedPct:   speedPct,
 		EnemyCount: len(e.state.Ships) - 1,
+	}
+
+	// Count incoming projectiles heading toward this ship.
+	const detectRadius float64 = 100
+	for i := range e.state.Projectiles {
+		p := &e.state.Projectiles[i]
+		if p.OwnerID == ship.ID {
+			continue
+		}
+		toShip := ship.Position.Sub(p.Position)
+		if float64(toShip.Length()) > detectRadius {
+			continue
+		}
+		if p.Velocity.Normalize().Dot(toShip.Normalize()) > 0.3 {
+			ctx.IncomingProjectiles++
+		}
 	}
 
 	// Resolve the primary target to fill target-related fields.
@@ -46,6 +71,7 @@ func (e *Engine) buildShipContext(ship *Ship) *ShipContext {
 		if target != nil {
 			ctx.TargetDist = float64(ship.Position.DistTo(target.Position))
 			ctx.TargetHPPct = float64(target.HealthPct())
+			ctx.TargetSpeed = float64(target.Velocity.Length())
 		}
 	}
 	return ctx
@@ -76,6 +102,31 @@ func (e *Engine) computeDesiredVelocity(ship *Ship, b *BehaviorBlock) {
 		e.desiredStrafe(ship, b, maxSpeed)
 	case "move_to":
 		e.desiredMoveTo(ship, b, maxSpeed)
+	// Evasive.
+	case "dodge":
+		e.desiredDodge(ship, b, maxSpeed)
+	case "barrel_roll":
+		e.desiredBarrelRoll(ship, b, maxSpeed)
+	case "juke":
+		e.desiredJuke(ship, b, maxSpeed)
+	case "evade":
+		e.desiredEvade(ship, b, maxSpeed)
+	// Tactical.
+	case "intercept":
+		e.desiredIntercept(ship, b, maxSpeed)
+	case "kite":
+		e.desiredKite(ship, b, maxSpeed)
+	case "flank":
+		e.desiredFlank(ship, b, maxSpeed)
+	case "ram":
+		e.desiredRam(ship, b, maxSpeed)
+	case "escort":
+		e.desiredEscort(ship, b, maxSpeed)
+	// Advanced.
+	case "zigzag":
+		e.desiredZigzag(ship, b, maxSpeed)
+	case "anchor":
+		e.desiredAnchor(ship, b, maxSpeed)
 	default:
 		ship.DesiredVelocity = Vec3{}
 	}
@@ -229,7 +280,8 @@ func (e *Engine) desiredMoveTo(ship *Ship, b *BehaviorBlock, maxSpeed float32) {
 // These are called by engine.updateEntities() after executeBehavior().
 
 // applyThrust steers ship.Velocity toward ship.DesiredVelocity using the
-// ship's thrust as the maximum acceleration per second.
+// ship's thrust as force.  Effective acceleration = Thrust / Mass, so heavier
+// ships are slower to change direction (momentum).
 func applyThrust(ship *Ship, dt float32) {
 	steer := ship.DesiredVelocity.Sub(ship.Velocity)
 	steerLen := steer.Length()
@@ -237,7 +289,9 @@ func applyThrust(ship *Ship, dt float32) {
 		return
 	}
 
-	maxAccel := ship.Thrust * dt
+	// Mass-scaled acceleration: baseline mass=10 keeps Scout unchanged.
+	const baseMass float32 = 10.0
+	maxAccel := ship.Thrust * dt * (baseMass / ship.Mass)
 	if steerLen > maxAccel {
 		steer = steer.Scale(maxAccel / steerLen)
 	}
@@ -277,14 +331,16 @@ func clampSpeed(ship *Ship) {
 }
 
 // applyRotation smoothly slerps the ship's quaternion toward the velocity
-// direction at TurnRate rad/s.
+// direction.  Turn rate scales inversely with mass so heavier ships are
+// less agile.
 func applyRotation(ship *Ship, dt float32) {
 	speed := ship.Velocity.Length()
 	if speed < 0.5 {
 		return // don't rotate when nearly stationary
 	}
 	target := quatLookDir(ship.Velocity)
-	t := ship.TurnRate * dt
+	const baseMass float32 = 10.0
+	t := ship.TurnRate * dt * (baseMass / ship.Mass)
 	if t > 1 {
 		t = 1
 	}

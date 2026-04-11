@@ -24,6 +24,10 @@ interface GameState {
   entities: Map<string, InterpolatedEntity>;
   tickDuration: number;
 
+  // Death/respawn.
+  myDeathTime: number | null; // performance.now() when own player died, null if alive
+  justRespawned: boolean; // true for one tick after respawn, triggers cooldown reset
+
   // Phase 3: behavior + prompt feedback.
   currentBehavior: BehaviorInfo | null;
   errorMessage: string | null;
@@ -55,6 +59,8 @@ export const useGameStore = create<GameState>((set) => ({
   lastUpdateTime: 0,
   entities: new Map(),
   tickDuration: TICK_DURATION,
+  myDeathTime: null,
+  justRespawned: false,
   currentBehavior: null,
   errorMessage: null,
   errorCooldown: 0,
@@ -74,6 +80,8 @@ export const useGameStore = create<GameState>((set) => ({
         currentBehavior: null,
         errorMessage: null,
         errorCooldown: 0,
+        myDeathTime: null,
+        justRespawned: false,
         laserBeams: [],
         explosions: [],
         killFeed: [],
@@ -102,6 +110,8 @@ export const useGameStore = create<GameState>((set) => ({
           shield: e.s,
           maxShield: e.ms,
           alive: e.a,
+          kills: 0,
+          deaths: 0,
         });
       }
       return {
@@ -133,6 +143,8 @@ export const useGameStore = create<GameState>((set) => ({
             shield: e.s,
             maxShield: e.ms,
             alive: e.a,
+            kills: existing.kills,
+            deaths: existing.deaths,
           });
         } else {
           entities.set(e.i, {
@@ -147,6 +159,8 @@ export const useGameStore = create<GameState>((set) => ({
             shield: e.s,
             maxShield: e.ms,
             alive: e.a,
+            kills: 0,
+            deaths: 0,
           });
         }
       }
@@ -164,6 +178,8 @@ export const useGameStore = create<GameState>((set) => ({
       let nextVfxId = state.nextVfxId;
 
       // Process combat events.
+      let myDeathTime = state.myDeathTime;
+      let justRespawned = false;
       if (update.ev && update.ev.length > 0) {
         for (const ev of update.ev) {
           switch (ev.t) {
@@ -182,6 +198,13 @@ export const useGameStore = create<GameState>((set) => ({
               if (ev.k && ev.v) {
                 const killerEntity = entities.get(ev.k);
                 const victimEntity = entities.get(ev.v);
+                // Increment kill/death counters.
+                if (killerEntity) {
+                  entities.set(ev.k, { ...killerEntity, kills: killerEntity.kills + 1 });
+                }
+                if (victimEntity) {
+                  entities.set(ev.v, { ...victimEntity, deaths: victimEntity.deaths + 1 });
+                }
                 killFeed = [...killFeed, {
                   id: nextVfxId++,
                   killer: ev.k,
@@ -198,6 +221,17 @@ export const useGameStore = create<GameState>((set) => ({
                     time: now,
                   }];
                 }
+                // Track own death.
+                if (ev.v === state.myPlayerId) {
+                  myDeathTime = now;
+                }
+              }
+              break;
+            case GameEventType.Respawn:
+              // Own player respawned — clear death, signal cooldown reset.
+              if (ev.v === state.myPlayerId) {
+                myDeathTime = null;
+                justRespawned = true;
               }
               break;
           }
@@ -218,6 +252,8 @@ export const useGameStore = create<GameState>((set) => ({
         killFeed,
         projectiles,
         nextVfxId,
+        myDeathTime,
+        justRespawned,
       };
     }),
 

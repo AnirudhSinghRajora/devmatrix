@@ -1,7 +1,18 @@
-import { useRef } from 'react';
+import { useRef, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
+import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 import { useGameStore } from '../store/gameStore';
+
+const HULL_MODELS: Record<string, string> = {
+  hull_basic:   '/models/ships/Striker.glb',
+  hull_medium:  '/models/ships/Challenger.glb',
+  hull_heavy:   '/models/ships/Imperial.glb',
+  hull_stealth: '/models/ships/Omen.glb',
+};
+
+// Preload all models.
+Object.values(HULL_MODELS).forEach((path) => useGLTF.preload(path));
 
 interface ShipProps {
   entityId: string;
@@ -12,17 +23,55 @@ const _prevPos = new THREE.Vector3();
 const _currPos = new THREE.Vector3();
 const _prevQuat = new THREE.Quaternion();
 const _currQuat = new THREE.Quaternion();
-const _color = new THREE.Color();
-const _emissive = new THREE.Color();
+
+function ShipModel({ hullId, color, isOwn }: { hullId: string; color: [number, number, number]; isOwn: boolean }) {
+  const modelPath = HULL_MODELS[hullId] ?? HULL_MODELS['hull_basic'];
+  const { scene } = useGLTF(modelPath);
+
+  const clonedScene = useMemo(() => {
+    const clone = scene.clone(true);
+    // Clone materials so instances don't share state, but preserve original colors/textures.
+    clone.traverse((child) => {
+      if (child instanceof THREE.Mesh && child.material) {
+        child.material = (child.material as THREE.MeshStandardMaterial).clone();
+      }
+    });
+    return clone;
+  }, [scene]);
+
+  return (
+    <group>
+      <primitive object={clonedScene} scale={1.5} />
+      {/* Colored ring under ship for player identification */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.3, 0]}>
+        <ringGeometry args={[1.8, 2.2, 32]} />
+        <meshBasicMaterial
+          color={new THREE.Color(color[0], color[1], color[2])}
+          transparent
+          opacity={isOwn ? 0.7 : 0.4}
+          depthWrite={false}
+          blending={THREE.AdditiveBlending}
+          side={THREE.DoubleSide}
+        />
+      </mesh>
+    </group>
+  );
+}
 
 export default function Ship({ entityId, isOwn }: ShipProps) {
   const groupRef = useRef<THREE.Group>(null);
-  const meshRef = useRef<THREE.Mesh>(null);
+  const shieldRef = useRef<THREE.Mesh>(null);
+  const prevShield = useRef<number>(-1);
+  const shieldFlashTime = useRef<number>(0);
+
+  // Read initial values for the model (these don't change per-tick).
+  const entity = useGameStore((s) => s.entities.get(entityId));
+  const hullId = entity?.hullId ?? 'hull_basic';
+  const color = entity?.color ?? [1, 1, 1] as [number, number, number];
 
   useFrame(() => {
     const group = groupRef.current;
-    const mesh = meshRef.current;
-    if (!group || !mesh) return;
+    if (!group) return;
 
     const state = useGameStore.getState();
     const e = state.entities.get(entityId);
@@ -42,24 +91,43 @@ export default function Ship({ entityId, isOwn }: ShipProps) {
 
     _prevQuat.set(e.prev.rotation[0], e.prev.rotation[1], e.prev.rotation[2], e.prev.rotation[3]);
     _currQuat.set(e.curr.rotation[0], e.curr.rotation[1], e.curr.rotation[2], e.curr.rotation[3]);
-    mesh.quaternion.slerpQuaternions(_prevQuat, _currQuat, t);
-
-    const mat = mesh.material as THREE.MeshStandardMaterial;
-    _color.setRGB(e.color[0], e.color[1], e.color[2]);
-    _emissive.setRGB(e.color[0] * 0.3, e.color[1] * 0.3, e.color[2] * 0.3);
-    mat.color.copy(_color);
-    mat.emissive.copy(_emissive);
-    mat.emissiveIntensity = isOwn ? 0.6 : 0.2;
+    group.quaternion.slerpQuaternions(_prevQuat, _currQuat, t);
 
     // Dead ships are invisible.
-    mesh.visible = e.alive;
+    group.visible = e.alive;
+
+    // Shield flash: detect shield decrease.
+    if (prevShield.current >= 0 && e.shield < prevShield.current && e.shield > 0) {
+      shieldFlashTime.current = performance.now();
+    }
+    prevShield.current = e.shield;
+
+    // Animate shield flash.
+    const shield = shieldRef.current;
+    if (shield) {
+      const flashElapsed = (performance.now() - shieldFlashTime.current) / 1000;
+      if (flashElapsed < 0.4) {
+        shield.visible = true;
+        (shield.material as THREE.MeshBasicMaterial).opacity = Math.max(0, 0.5 * (1 - flashElapsed / 0.4));
+      } else {
+        shield.visible = false;
+      }
+    }
   });
 
   return (
     <group ref={groupRef}>
-      <mesh ref={meshRef}>
-        <boxGeometry args={[1, 0.5, 2]} />
-        <meshStandardMaterial />
+      <ShipModel hullId={hullId} color={color} isOwn={isOwn} />
+      {/* Shield hit flash bubble */}
+      <mesh ref={shieldRef} visible={false}>
+        <sphereGeometry args={[2.5, 16, 12]} />
+        <meshBasicMaterial
+          color="#44aaff"
+          transparent
+          depthWrite={false}
+          blending={THREE.AdditiveBlending}
+          side={THREE.BackSide}
+        />
       </mesh>
     </group>
   );

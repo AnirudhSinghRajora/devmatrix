@@ -1,0 +1,32 @@
+[Unit]
+Description=DevMatrix Game Server
+After=network.target postgresql.service
+Wants=postgresql.service
+
+[Service]
+Type=simple
+User=devmatrix
+Group=devmatrix
+WorkingDirectory=/opt/devmatrix/server
+
+ExecStart=/opt/devmatrix/server/devmatrix
+
+# Environment
+EnvironmentFile=/opt/devmatrix/server/.env
+
+# Restart on failure
+Restart=on-failure
+RestartSec=5s
+
+# Resource limits
+LimitNOFILE=65536
+
+# Security hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/devmatrix/server
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

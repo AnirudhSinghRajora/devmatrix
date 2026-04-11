@@ -43,12 +43,20 @@ type ConditionalBlock struct {
 var validMovements = map[string]bool{
 	"idle": true, "move_to": true, "orbit": true, "chase": true,
 	"flee": true, "patrol": true, "strafe": true, "wander": true,
+	// Evasive.
+	"dodge": true, "barrel_roll": true, "juke": true, "evade": true,
+	// Tactical.
+	"intercept": true, "kite": true, "flank": true, "ram": true, "escort": true,
+	// Advanced.
+	"zigzag": true, "anchor": true,
 }
 
 var validCombats = map[string]bool{
 	"fire_at": true, "hold_fire": true, "": true,
+	"burst_fire": true, "fire_at_will": true,
 }
 
 var validDefenses = map[string]bool{
 	"shield_front": true, "shield_balanced": true, "shield_rear": true, "": true,
+	"shield_omni": true,
 }

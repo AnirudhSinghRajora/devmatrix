@@ -86,6 +86,8 @@ export interface InterpolatedEntity {
   shield: number;
   maxShield: number;
   alive: boolean;
+  kills: number;
+  deaths: number;
 }
 
 // Server → Client: error message.

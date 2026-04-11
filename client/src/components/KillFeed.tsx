@@ -11,9 +11,9 @@ export default function KillFeed() {
         position: 'absolute',
         bottom: 80,
         right: 12,
-        color: '#fff',
-        fontFamily: 'monospace',
-        fontSize: 13,
+        color: 'var(--hud-text)',
+        fontFamily: 'var(--hud-font)',
+        fontSize: 12,
         textAlign: 'right',
         pointerEvents: 'none',
       }}
@@ -22,15 +22,16 @@ export default function KillFeed() {
         <div
           key={entry.id}
           style={{
-            padding: '2px 8px',
-            marginBottom: 2,
-            background: 'rgba(0,0,0,0.6)',
-            borderRadius: 3,
+            padding: '3px 10px',
+            marginBottom: 3,
+            background: 'var(--hud-bg)',
+            borderRadius: 'var(--hud-radius)',
+            border: '1px solid var(--hud-border)',
           }}
         >
-          <span style={{ color: '#f55' }}>{entry.killerName || entry.killer.slice(0, 8)}</span>
+          <span style={{ color: 'var(--hud-red)' }}>{entry.killerName || entry.killer.slice(0, 8)}</span>
           {' \u26A1 '}
-          <span style={{ color: '#aaa' }}>{entry.victimName || entry.victim.slice(0, 8)}</span>
+          <span style={{ color: 'var(--hud-text-dim)' }}>{entry.victimName || entry.victim.slice(0, 8)}</span>
         </div>
       ))}
     </div>
