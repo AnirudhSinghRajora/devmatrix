@@ -1,19 +1,36 @@
 package main
 
 import (
-"context"
-"net/http"
-"os"
-"os/signal"
-"syscall"
-"time"
+	"context"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
-"github.com/DevMatrix/server/internal/config"
-"github.com/DevMatrix/server/internal/game"
-"github.com/DevMatrix/server/internal/network"
-"github.com/rs/zerolog"
-"github.com/rs/zerolog/log"
+	"github.com/DevMatrix/server/internal/api"
+	"github.com/DevMatrix/server/internal/auth"
+	"github.com/DevMatrix/server/internal/config"
+	"github.com/DevMatrix/server/internal/db"
+	"github.com/DevMatrix/server/internal/game"
+	"github.com/DevMatrix/server/internal/llm"
+	"github.com/DevMatrix/server/internal/network"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 )
+
+// wsAuthAdapter bridges auth.Service → network.AuthValidator.
+type wsAuthAdapter struct {
+	svc *auth.Service
+}
+
+func (a *wsAuthAdapter) ValidateWSToken(tokenStr string) (string, string, error) {
+	claims, err := a.svc.ValidateToken(tokenStr)
+	if err != nil {
+		return "", "", err
+	}
+	return claims.UserID.String(), claims.Username, nil
+}
 
 func main() {
 	log.Logger = zerolog.New(zerolog.ConsoleWriter{Out: os.Stderr, TimeFormat: time.RFC3339}).
@@ -21,27 +38,77 @@ func main() {
 
 	cfg := config.Load()
 
-	hub := network.NewHub(cfg.AllowedOrigins)
-	engine := game.NewEngine(cfg.TickRate, hub)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// Channels bridge the Hub (many goroutines) → Engine (single goroutine).
+	joinCh := make(chan network.JoinRequest, 32)
+	leaveCh := make(chan string, 32)
+	promptCh := make(chan network.PromptRequest, 64)
+
+	// LLM pipeline channels.
+	llmReqCh := make(chan game.LLMRequest, 64)
+	llmResultCh := make(chan game.LLMResult, 64)
+
+	cooldown := llm.NewCooldownTracker(cfg.PromptCooldown)
+
+	hub := network.NewHub(cfg.AllowedOrigins, cfg.MaxPlayers, joinCh, leaveCh, promptCh)
+	llmService := llm.NewService(cfg.LLMURL, cfg.LLMWorkers, llmReqCh, llmResultCh)
+	engine := game.NewEngine(
+		cfg.TickRate, hub,
+		joinCh, leaveCh, promptCh,
+		llmReqCh, llmResultCh, cooldown,
+	)
 
 	mux := http.NewServeMux()
+
+	// --- Optional persistence layer ---
+	if cfg.DatabaseURL != "" {
+		pool, err := db.NewPool(ctx, cfg.DatabaseURL)
+		if err != nil {
+			log.Fatal().Err(err).Msg("failed to connect to database")
+		}
+		defer pool.Close()
+
+		if err := db.RunMigrations(ctx, pool); err != nil {
+			log.Fatal().Err(err).Msg("failed to run migrations")
+		}
+
+		itemCache, err := db.NewItemCache(ctx, pool)
+		if err != nil {
+			log.Fatal().Err(err).Msg("failed to build item cache")
+		}
+
+		queries := db.NewQueries(pool)
+		authSvc := auth.NewService(cfg.JWTSecret, pool)
+
+		dbWriter := db.NewDBWriter(queries)
+		go dbWriter.Run(ctx)
+
+		hub.SetAuthValidator(&wsAuthAdapter{svc: authSvc})
+		engine.SetDB(itemCache, dbWriter, queries)
+
+		apiHandler := api.NewHandler(authSvc, queries)
+		apiHandler.Register(mux)
+		log.Info().Msg("persistence layer enabled")
+	} else {
+		log.Info().Msg("no DATABASE_URL — running in anonymous mode")
+	}
+
 	mux.HandleFunc("/ws", hub.HandleWebSocket)
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
-w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Content-Type", "application/json")
 		w.Write([]byte(`{"status":"ok"}`))
 	})
 
 	srv := &http.Server{
-		Addr:         cfg.Addr,
-		Handler:      mux,
-		ReadTimeout:  10 * time.Second,
-		WriteTimeout: 10 * time.Second,
+		Addr:              cfg.Addr,
+		Handler:           mux,
+		ReadHeaderTimeout: 10 * time.Second,
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
 	go engine.Run(ctx)
+	go llmService.Run(ctx)
 
 	go func() {
 		sigCh := make(chan os.Signal, 1)
@@ -55,7 +122,17 @@ w.Header().Set("Content-Type", "application/json")
 		srv.Shutdown(shutdownCtx)
 	}()
 
-	log.Info().Str("addr", cfg.Addr).Msg("server starting")
+	llmMode := "mock"
+	if cfg.LLMURL != "" {
+		llmMode = cfg.LLMURL
+	}
+	log.Info().
+		Str("addr", cfg.Addr).
+		Int("maxPlayers", cfg.MaxPlayers).
+		Str("llm", llmMode).
+		Dur("cooldown", cfg.PromptCooldown).
+		Msg("server starting")
+
 	if err := srv.ListenAndServe(); err != http.ErrServerClosed {
 		log.Fatal().Err(err).Msg("server error")
 	}
