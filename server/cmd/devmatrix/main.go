@@ -54,7 +54,7 @@ func main() {
 	cooldown := llm.NewCooldownTracker(cfg.PromptCooldown)
 
 	hub := network.NewHub(cfg.AllowedOrigins, cfg.MaxPlayers, joinCh, leaveCh, promptCh)
-	llmService := llm.NewService(cfg.LLMURL, cfg.LLMWorkers, llmReqCh, llmResultCh)
+	llmService := llm.NewService(cfg.LLMURL, cfg.LLMModel, cfg.LLMWorkers, llmReqCh, llmResultCh)
 	engine := game.NewEngine(
 		cfg.TickRate, hub,
 		joinCh, leaveCh, promptCh,
