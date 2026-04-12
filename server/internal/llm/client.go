@@ -13,13 +13,16 @@ import (
 // Client communicates with an OpenAI-compatible LLM endpoint.
 type Client struct {
 	baseURL    string
+	model      string
 	httpClient *http.Client
 }
 
 // NewClient creates an LLM HTTP client. baseURL should be e.g. "http://localhost:8000".
-func NewClient(baseURL string) *Client {
+// model is the model name to send in requests (empty = auto-detect from /v1/models).
+func NewClient(baseURL, model string) *Client {
 	return &Client{
 		baseURL: baseURL,
+		model:   model,
 		httpClient: &http.Client{
 			Timeout: 15 * time.Second,
 		},
@@ -51,7 +54,7 @@ type chatResponse struct {
 // Generate sends a system+user prompt pair and returns the LLM's text response.
 func (c *Client) Generate(ctx context.Context, systemPrompt, userPrompt string) (string, error) {
 	reqBody := chatRequest{
-		Model: "default",
+		Model: c.model,
 		Messages: []chatMessage{
 			{Role: "system", Content: systemPrompt},
 			{Role: "user", Content: userPrompt},

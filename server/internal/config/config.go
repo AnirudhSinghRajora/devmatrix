@@ -15,6 +15,7 @@ type Config struct {
 
 	// LLM settings.
 	LLMURL          string        // empty = mock mode
+	LLMModel        string        // model name for /v1/chat/completions
 	LLMWorkers      int           // concurrent LLM worker goroutines
 	PromptCooldown  time.Duration // minimum time between prompts per player
 
@@ -58,6 +59,10 @@ func Load() *Config {
 
 	if url := os.Getenv("LLM_URL"); url != "" {
 		cfg.LLMURL = url
+	}
+
+	if model := os.Getenv("LLM_MODEL"); model != "" {
+		cfg.LLMModel = model
 	}
 
 	if w := os.Getenv("LLM_WORKERS"); w != "" {

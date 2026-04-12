@@ -19,10 +19,10 @@ type Service struct {
 
 // NewService creates a Service.
 // If llmURL is empty, the service runs in mock mode (keyword-based parsing).
-func NewService(llmURL string, workers int, reqCh <-chan game.LLMRequest, resultCh chan<- game.LLMResult) *Service {
+func NewService(llmURL, model string, workers int, reqCh <-chan game.LLMRequest, resultCh chan<- game.LLMResult) *Service {
 	var c *Client
 	if llmURL != "" {
-		c = NewClient(llmURL)
+		c = NewClient(llmURL, model)
 	}
 	return &Service{
 		client:   c,
