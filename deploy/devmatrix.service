@@ -5,8 +5,8 @@ Wants=postgresql.service
 
 [Service]
 Type=simple
-User=devmatrix
-Group=devmatrix
+User=Anirudh
+Group=Anirudh
 WorkingDirectory=/home/Anirudh/devmatrix/server
 
 ExecStart=/home/Anirudh/devmatrix/server/devmatrix
@@ -24,7 +24,7 @@ LimitNOFILE=65536
 # Security hardening
 NoNewPrivileges=true
 ProtectSystem=strict
-ProtectHome=true
+ProtectHome=false
 ReadWritePaths=/home/Anirudh/devmatrix/server
 PrivateTmp=true
 

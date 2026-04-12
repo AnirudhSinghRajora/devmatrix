@@ -53,11 +53,12 @@ type chatResponse struct {
 
 // Generate sends a system+user prompt pair and returns the LLM's text response.
 func (c *Client) Generate(ctx context.Context, systemPrompt, userPrompt string) (string, error) {
+	// Merge system prompt into user message for models that don't support the system role (e.g. Gemma).
+	combined := systemPrompt + "\n\n" + userPrompt
 	reqBody := chatRequest{
 		Model: c.model,
 		Messages: []chatMessage{
-			{Role: "system", Content: systemPrompt},
-			{Role: "user", Content: userPrompt},
+			{Role: "user", Content: combined},
 		},
 		MaxTokens:   200,
 		Temperature: 0.1, // low temperature for deterministic JSON

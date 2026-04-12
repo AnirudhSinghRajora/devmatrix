@@ -37,28 +37,24 @@ func ParseBehaviorJSON(raw string) (*BehaviorSet, error) {
 
 func validateBehaviorBlock(b *BehaviorBlock) error {
 	if b.Movement == "" {
-		return fmt.Errorf("missing movement")
+		b.Movement = "idle"
 	}
 	if !validMovements[b.Movement] {
-		return fmt.Errorf("unknown movement: %q", b.Movement)
+		b.Movement = fuzzyMovement(b.Movement)
 	}
 	if !validCombats[b.Combat] {
-		return fmt.Errorf("unknown combat: %q", b.Combat)
+		b.Combat = fuzzyCombat(b.Combat)
 	}
 	if !validDefenses[b.Defense] {
-		return fmt.Errorf("unknown defense: %q", b.Defense)
+		b.Defense = fuzzyDefense(b.Defense)
 	}
 
-	// Validate target selectors.
-	if t := b.MovementParams.Target; t != "" {
-		if !isValidTarget(t) {
-			return fmt.Errorf("unknown movement target: %q", t)
-		}
+	// Normalize target selectors — remap invalid targets to nearest_enemy.
+	if t := b.MovementParams.Target; t != "" && !isValidTarget(t) {
+		b.MovementParams.Target = fuzzyTarget(t)
 	}
-	if t := b.CombatParams.Target; t != "" {
-		if !isValidTarget(t) {
-			return fmt.Errorf("unknown combat target: %q", t)
-		}
+	if t := b.CombatParams.Target; t != "" && !isValidTarget(t) {
+		b.CombatParams.Target = fuzzyTarget(t)
 	}
 
 	// Clamp numeric parameters to safe ranges.
@@ -102,6 +98,36 @@ func isValidTarget(t string) bool {
 	return strings.HasPrefix(t, "player:")
 }
 
+// fuzzyTarget maps an invalid target string to the best valid selector.
+func fuzzyTarget(t string) string {
+	t = strings.ToLower(strings.TrimSpace(t))
+
+	// If it looks like a player name reference, wrap it.
+	for _, prefix := range []string{"player:", "player_", "player "} {
+		if strings.HasPrefix(t, prefix) {
+			name := strings.TrimPrefix(t, prefix)
+			return "player:" + strings.TrimSpace(name)
+		}
+	}
+
+	// Keyword matching.
+	switch {
+	case strings.Contains(t, "weak") || strings.Contains(t, "low health") || strings.Contains(t, "damaged"):
+		return "weakest_enemy"
+	case strings.Contains(t, "strong") || strings.Contains(t, "tough") || strings.Contains(t, "full health"):
+		return "strongest_enemy"
+	case strings.Contains(t, "shield") || strings.Contains(t, "unshielded"):
+		return "lowest_shield"
+	case strings.Contains(t, "threat") || strings.Contains(t, "danger"):
+		return "nearest_threat"
+	case strings.Contains(t, "random") || strings.Contains(t, "any"):
+		return "random_enemy"
+	default:
+		// "other_ship", "enemy", "the ship", etc. → nearest
+		return "nearest_enemy"
+	}
+}
+
 // extractJSON finds the JSON object in a response that may contain markdown fences or prose.
 func extractJSON(s string) string {
 	s = strings.TrimSpace(s)
@@ -136,4 +162,79 @@ func clampF32(v, min, max float32) float32 {
 		return max
 	}
 	return v
+}
+
+// fuzzyMovement maps an invalid movement string to the closest valid one.
+func fuzzyMovement(m string) string {
+	m = strings.ToLower(strings.TrimSpace(m))
+	switch {
+	case strings.Contains(m, "chase") || strings.Contains(m, "follow") || strings.Contains(m, "pursue") || strings.Contains(m, "attack"):
+		return "chase"
+	case strings.Contains(m, "flee") || strings.Contains(m, "run") || strings.Contains(m, "escape") || strings.Contains(m, "retreat"):
+		return "flee"
+	case strings.Contains(m, "orbit") || strings.Contains(m, "circle"):
+		return "orbit"
+	case strings.Contains(m, "dodge") || strings.Contains(m, "jink"):
+		return "dodge"
+	case strings.Contains(m, "barrel") || strings.Contains(m, "roll") || strings.Contains(m, "spin"):
+		return "barrel_roll"
+	case strings.Contains(m, "juke") || strings.Contains(m, "fake"):
+		return "juke"
+	case strings.Contains(m, "evade") || strings.Contains(m, "avoid"):
+		return "evade"
+	case strings.Contains(m, "intercept") || strings.Contains(m, "cut off"):
+		return "intercept"
+	case strings.Contains(m, "kite") || strings.Contains(m, "keep distance"):
+		return "kite"
+	case strings.Contains(m, "flank") || strings.Contains(m, "behind"):
+		return "flank"
+	case strings.Contains(m, "ram") || strings.Contains(m, "crash") || strings.Contains(m, "collide"):
+		return "ram"
+	case strings.Contains(m, "escort") || strings.Contains(m, "guard") || strings.Contains(m, "protect"):
+		return "escort"
+	case strings.Contains(m, "zigzag") || strings.Contains(m, "zig") || strings.Contains(m, "weave"):
+		return "zigzag"
+	case strings.Contains(m, "anchor") || strings.Contains(m, "stay") || strings.Contains(m, "hold") || strings.Contains(m, "stop"):
+		return "anchor"
+	case strings.Contains(m, "strafe") || strings.Contains(m, "side"):
+		return "strafe"
+	case strings.Contains(m, "patrol") || strings.Contains(m, "scout"):
+		return "patrol"
+	case strings.Contains(m, "wander") || strings.Contains(m, "roam") || strings.Contains(m, "explore"):
+		return "wander"
+	case strings.Contains(m, "destroy") || strings.Contains(m, "kill") || strings.Contains(m, "eliminate"):
+		return "chase"
+	default:
+		return "chase"
+	}
+}
+
+// fuzzyCombat maps an invalid combat string to the closest valid one.
+func fuzzyCombat(c string) string {
+	c = strings.ToLower(strings.TrimSpace(c))
+	switch {
+	case strings.Contains(c, "fire") || strings.Contains(c, "shoot") || strings.Contains(c, "attack") || strings.Contains(c, "destroy") || strings.Contains(c, "kill"):
+		return "fire_at"
+	case strings.Contains(c, "burst"):
+		return "burst_fire"
+	case strings.Contains(c, "hold") || strings.Contains(c, "stop") || strings.Contains(c, "cease") || strings.Contains(c, "peace"):
+		return "hold_fire"
+	default:
+		return "fire_at"
+	}
+}
+
+// fuzzyDefense maps an invalid defense string to the closest valid one.
+func fuzzyDefense(d string) string {
+	d = strings.ToLower(strings.TrimSpace(d))
+	switch {
+	case strings.Contains(d, "front") || strings.Contains(d, "forward"):
+		return "shield_front"
+	case strings.Contains(d, "rear") || strings.Contains(d, "back"):
+		return "shield_rear"
+	case strings.Contains(d, "omni") || strings.Contains(d, "all"):
+		return "shield_omni"
+	default:
+		return "shield_balanced"
+	}
 }

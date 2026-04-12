@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { connect, disconnect } from './network/socket';
 import { getToken, clearToken } from './network/api';
-import { useGameStore } from './store/gameStore';
 import Scene from './components/Scene';
 import PromptInput from './components/PromptInput';
 import BehaviorIndicator from './components/BehaviorIndicator';
