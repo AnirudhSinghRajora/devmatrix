@@ -25,6 +25,17 @@ html, body, #root {
   background: #000;
   font-family: var(--hud-font);
   color: var(--hud-text);
+  touch-action: none;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Allow text selection only in input fields. */
+input, textarea {
+  -webkit-user-select: text;
+  user-select: text;
 }
 
 ::selection {

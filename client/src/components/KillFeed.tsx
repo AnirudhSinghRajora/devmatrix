@@ -13,9 +13,10 @@ export default function KillFeed() {
         right: 12,
         color: 'var(--hud-text)',
         fontFamily: 'var(--hud-font)',
-        fontSize: 12,
+        fontSize: 'min(12px, 3vw)',
         textAlign: 'right',
         pointerEvents: 'none',
+        maxWidth: '45vw',
       }}
     >
       {killFeed.slice(-5).map((entry) => (

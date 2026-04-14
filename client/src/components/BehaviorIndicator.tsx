@@ -35,7 +35,7 @@ const containerStyle: React.CSSProperties = {
   bottom: 80,
   left: 12,
   fontFamily: 'var(--hud-font)',
-  fontSize: 13,
+  fontSize: 'min(13px, 3.2vw)',
   color: 'var(--hud-accent)',
   background: 'var(--hud-bg)',
   border: '1px solid var(--hud-border)',
@@ -44,6 +44,7 @@ const containerStyle: React.CSSProperties = {
   pointerEvents: 'none',
   lineHeight: 1.6,
   boxShadow: 'var(--hud-glow)',
+  maxWidth: '45vw',
 };
 
 const labelStyle: React.CSSProperties = {

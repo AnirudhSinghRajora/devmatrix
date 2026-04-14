@@ -78,20 +78,29 @@ export default function Ship({ entityId, isOwn }: ShipProps) {
     if (!e) return;
 
     const elapsed = performance.now() - state.lastUpdateTime;
-    const t = Math.min(elapsed / state.tickDuration, 1.0);
+    const t = elapsed / state.tickDuration;
 
     _prevPos.set(e.prev.position[0], e.prev.position[1], e.prev.position[2]);
     _currPos.set(e.curr.position[0], e.curr.position[1], e.curr.position[2]);
 
     if (_prevPos.distanceToSquared(_currPos) > 2500) {
       group.position.copy(_currPos);
-    } else {
+    } else if (t <= 1.0) {
       group.position.lerpVectors(_prevPos, _currPos, t);
+    } else {
+      // Dead-reckoning: extrapolate along (prev→curr) velocity for up to
+      // 5 missed ticks (~166ms) so ships glide smoothly during network gaps.
+      const extra = Math.min(t - 1.0, 5.0);
+      group.position.set(
+        _currPos.x + (_currPos.x - _prevPos.x) * extra,
+        _currPos.y + (_currPos.y - _prevPos.y) * extra,
+        _currPos.z + (_currPos.z - _prevPos.z) * extra,
+      );
     }
 
     _prevQuat.set(e.prev.rotation[0], e.prev.rotation[1], e.prev.rotation[2], e.prev.rotation[3]);
     _currQuat.set(e.curr.rotation[0], e.curr.rotation[1], e.curr.rotation[2], e.curr.rotation[3]);
-    group.quaternion.slerpQuaternions(_prevQuat, _currQuat, t);
+    group.quaternion.slerpQuaternions(_prevQuat, _currQuat, Math.min(t, 1.0));
 
     // Dead ships are invisible.
     group.visible = e.alive;

@@ -10,6 +10,9 @@ import CameraFollow from './CameraFollow';
 import LaserBeam from './LaserBeam';
 import Explosion from './Explosion';
 
+const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+const maxDpr = isMobile ? 1.5 : 2;
+
 /**
  * Subscribe only to the sorted list of entity IDs so Scene re-renders
  * only when players join/leave — NOT on every 33ms position tick.
@@ -77,14 +80,15 @@ export default function Scene() {
   return (
     <Canvas
       camera={{ position: [0, 15, 30], fov: 60, near: 0.1, far: 2000 }}
-      style={{ width: '100vw', height: '100vh' }}
+      dpr={[1, maxDpr]}
+      style={{ width: '100vw', height: '100vh', touchAction: 'none' }}
     >
       <ambientLight intensity={0.25} />
       <directionalLight position={[10, 10, 5]} intensity={0.8} />
       <directionalLight position={[-5, -3, -10]} intensity={0.15} color="#4488ff" />
-      <Stars radius={400} depth={100} count={5000} factor={8} saturation={0.2} fade />
+      <Stars radius={400} depth={100} count={isMobile ? 2000 : 5000} factor={8} saturation={0.2} fade />
       <CameraFollow />
-      <gridHelper args={[1000, 200, '#1a1a2e', '#0a0a15']} />
+      <gridHelper args={[1000, isMobile ? 100 : 200, '#1a1a2e', '#0a0a15']} />
       <ArenaBoundary />
 
       {entityIds.map((id) => (
@@ -98,14 +102,16 @@ export default function Scene() {
         <EngineTrail key={`trail-${id}`} entityId={id} />
       ))}
       <CombatVfx />
-      <EffectComposer>
-        <Bloom
-          luminanceThreshold={0.6}
-          luminanceSmoothing={0.4}
-          intensity={0.8}
-          mipmapBlur
-        />
-      </EffectComposer>
+      {!isMobile && (
+        <EffectComposer>
+          <Bloom
+            luminanceThreshold={0.6}
+            luminanceSmoothing={0.4}
+            intensity={0.8}
+            mipmapBlur
+          />
+        </EffectComposer>
+      )}
     </Canvas>
   );
 }

@@ -26,7 +26,7 @@ export default function CameraFollow() {
 
     // Interpolated position of our ship (same logic as Ship.tsx).
     const elapsed = performance.now() - state.lastUpdateTime;
-    const t = Math.min(elapsed / state.tickDuration, 1.0);
+    const t = elapsed / state.tickDuration;
 
     _prevCam.set(myEntity.prev.position[0], myEntity.prev.position[1], myEntity.prev.position[2]);
     _currCam.set(myEntity.curr.position[0], myEntity.curr.position[1], myEntity.curr.position[2]);
@@ -34,8 +34,16 @@ export default function CameraFollow() {
     // Snap if jump is too large.
     if (_prevCam.distanceToSquared(_currCam) > 2500) {
       _target.copy(_currCam);
-    } else {
+    } else if (t <= 1.0) {
       _target.lerpVectors(_prevCam, _currCam, t);
+    } else {
+      // Dead-reckoning extrapolation (capped at 5 missed ticks).
+      const extra = Math.min(t - 1.0, 5.0);
+      _target.set(
+        _currCam.x + (_currCam.x - _prevCam.x) * extra,
+        _currCam.y + (_currCam.y - _prevCam.y) * extra,
+        _currCam.z + (_currCam.z - _prevCam.z) * extra,
+      );
     }
 
     // On first frame, snap camera into position.

@@ -118,17 +118,21 @@ const containerStyle: React.CSSProperties = {
   gap: 6,
   fontFamily: 'var(--hud-font)',
   zIndex: 10,
+  width: '95%',
+  maxWidth: 520,
 };
 
 const rowStyle: React.CSSProperties = {
   display: 'flex',
   alignItems: 'center',
   gap: 8,
+  width: '100%',
 };
 
 const inputStyle: React.CSSProperties = {
-  width: 420,
-  padding: '8px 14px',
+  flex: 1,
+  minWidth: 0,
+  padding: '10px 14px',
   background: 'var(--hud-bg)',
   border: '1px solid var(--hud-border)',
   borderRadius: 'var(--hud-radius)',
@@ -142,12 +146,13 @@ const inputStyle: React.CSSProperties = {
 const charCountStyle: React.CSSProperties = {
   color: 'var(--hud-text-dim)',
   fontSize: 11,
-  minWidth: 50,
+  minWidth: 40,
   textAlign: 'right',
+  flexShrink: 0,
 };
 
 const buttonStyle: React.CSSProperties = {
-  padding: '8px 18px',
+  padding: '10px 18px',
   background: 'rgba(0, 200, 255, 0.12)',
   border: '1px solid var(--hud-border)',
   borderRadius: 'var(--hud-radius)',
@@ -156,6 +161,7 @@ const buttonStyle: React.CSSProperties = {
   fontSize: 14,
   cursor: 'pointer',
   letterSpacing: 1,
+  flexShrink: 0,
 };
 
 const errorStyle: React.CSSProperties = {
@@ -165,4 +171,6 @@ const errorStyle: React.CSSProperties = {
   background: 'rgba(255, 0, 0, 0.08)',
   borderRadius: 'var(--hud-radius)',
   border: '1px solid rgba(255, 68, 68, 0.3)',
+  maxWidth: '100%',
+  textAlign: 'center',
 };

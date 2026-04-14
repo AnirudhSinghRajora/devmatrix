@@ -71,26 +71,10 @@ export const useGameStore = create<GameState>((set) => ({
   nextVfxId: 1,
 
   setConnected: (connected) => {
-    if (!connected) {
-      set({
-        connected,
-        myPlayerId: null,
-        tick: 0,
-        entities: new Map(),
-        currentBehavior: null,
-        errorMessage: null,
-        errorCooldown: 0,
-        myDeathTime: null,
-        justRespawned: false,
-        laserBeams: [],
-        explosions: [],
-        killFeed: [],
-        projectiles: [],
-        nextVfxId: 1,
-      });
-    } else {
-      set({ connected });
-    }
+    // Keep entities and world state on disconnect so ships extrapolate
+    // smoothly during brief network hiccups.  applyWelcome will
+    // replace everything when the connection is re-established.
+    set({ connected });
   },
 
   applyWelcome: (welcome) =>

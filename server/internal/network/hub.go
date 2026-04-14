@@ -3,6 +3,7 @@ package network
 import (
 	"context"
 	"fmt"
+	"math/rand"
 	"net/http"
 	"sync"
 	"sync/atomic"
@@ -10,6 +11,26 @@ import (
 	"github.com/coder/websocket"
 	"github.com/rs/zerolog/log"
 )
+
+var guestAdjectives = []string{
+	"Swift", "Shadow", "Cosmic", "Neon", "Iron",
+	"Hyper", "Void", "Blaze", "Frost", "Storm",
+	"Dark", "Lunar", "Solar", "Cyber", "Turbo",
+	"Nova", "Pulse", "Drift", "Ghost", "Rogue",
+}
+
+var guestNouns = []string{
+	"Pilot", "Hawk", "Viper", "Fox", "Wolf",
+	"Falcon", "Reaper", "Ace", "Comet", "Ranger",
+	"Phoenix", "Shark", "Specter", "Arrow", "Raven",
+	"Wraith", "Striker", "Hunter", "Bolt", "Dagger",
+}
+
+func randomGuestName() string {
+	adj := guestAdjectives[rand.Intn(len(guestAdjectives))]
+	noun := guestNouns[rand.Intn(len(guestNouns))]
+	return adj + noun
+}
 
 // Hub manages all active WebSocket clients and bridges connections to the game engine.
 type Hub struct {
@@ -78,7 +99,7 @@ func (h *Hub) HandleWebSocket(w http.ResponseWriter, r *http.Request) {
 	} else {
 		// Guest / anonymous mode.
 		id = fmt.Sprintf("guest_%d", h.nextID.Add(1))
-		username = fmt.Sprintf("Guest_%d", h.nextID.Load())
+		username = randomGuestName()
 	}
 
 	conn, err := websocket.Accept(w, r, &websocket.AcceptOptions{
