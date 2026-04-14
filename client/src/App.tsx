@@ -12,12 +12,22 @@ import AuthScreen from './components/AuthScreen';
 import LobbyScreen from './components/LobbyScreen';
 import Shop from './components/Shop';
 import Leaderboard from './components/Leaderboard';
+import { useGameAudio } from './audio/useGameAudio';
+import AudioTestPage from './audio/AudioTestPage';
 
 function App() {
+  // Dev audio test page — visit /?audio to use without a server.
+  if (typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('audio')) {
+    return <AudioTestPage />;
+  }
+
   const [authed, setAuthed] = useState<boolean | null>(null); // null = checking
   const [inGame, setInGame] = useState(false);
   const [showShop, setShowShop] = useState(false);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
+
+  // Procedural audio — activates when connected, silent otherwise.
+  useGameAudio();
 
   // Check for existing token on mount.
   useEffect(() => {
