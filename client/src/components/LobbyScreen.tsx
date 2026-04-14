@@ -51,7 +51,7 @@ function RotatingShip({ model }: { model: string }) {
 }
 
 interface Props {
-  onLaunch: () => void;
+  onLaunch: (hullId: string) => void;
 }
 
 export default function LobbyScreen({ onLaunch }: Props) {
@@ -186,7 +186,7 @@ export default function LobbyScreen({ onLaunch }: Props) {
           <button onClick={() => setShowShop(true)} style={shopBtnStyle}>SHOP</button>
         )}
         <button
-          onClick={onLaunch}
+          onClick={() => onLaunch(hull.id)}
           disabled={!canLaunch}
           style={{
             ...launchBtnStyle,

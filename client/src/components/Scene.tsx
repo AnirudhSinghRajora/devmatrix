@@ -82,7 +82,7 @@ export default function Scene() {
       <ambientLight intensity={0.25} />
       <directionalLight position={[10, 10, 5]} intensity={0.8} />
       <directionalLight position={[-5, -3, -10]} intensity={0.15} color="#4488ff" />
-      <Stars radius={400} depth={100} count={5000} factor={5} fade />
+      <Stars radius={400} depth={100} count={5000} factor={8} saturation={0.2} fade />
       <CameraFollow />
       <gridHelper args={[1000, 200, '#1a1a2e', '#0a0a15']} />
       <ArenaBoundary />

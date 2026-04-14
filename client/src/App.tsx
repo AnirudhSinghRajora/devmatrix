@@ -16,6 +16,7 @@ import Leaderboard from './components/Leaderboard';
 function App() {
   const [authed, setAuthed] = useState<boolean | null>(null); // null = checking
   const [inGame, setInGame] = useState(false);
+  const [launchHull, setLaunchHull] = useState<string | null>(null);
   const [showShop, setShowShop] = useState(false);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
 
@@ -27,7 +28,7 @@ function App() {
   // Connect WS only after player launches from lobby.
   useEffect(() => {
     if (!inGame) return;
-    connect();
+    connect(launchHull ?? undefined);
     return () => disconnect();
   }, [inGame]);
 
@@ -44,7 +45,7 @@ function App() {
 
   // Show lobby if authed but not yet in-game.
   if (!inGame) {
-    return <LobbyScreen onLaunch={() => setInGame(true)} />;
+    return <LobbyScreen onLaunch={(hullId) => { setLaunchHull(hullId); setInGame(true); }} />;
   }
 
   const isLoggedIn = getToken() !== null;

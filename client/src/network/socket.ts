@@ -6,15 +6,20 @@ import { getToken } from './api';
 
 let ws: WebSocket | null = null;
 let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+let selectedHull: string | null = null;
 
 function buildWsUrl(): string {
   const proto = window.location.protocol === 'https:' ? 'wss' : 'ws';
-  let url = `${proto}://${window.location.host}/ws`;
+  const params = new URLSearchParams();
   const token = getToken();
   if (token) {
-    url += `?token=${encodeURIComponent(token)}`;
+    params.set('token', token);
   }
-  return url;
+  if (selectedHull) {
+    params.set('hull', selectedHull);
+  }
+  const qs = params.toString();
+  return `${proto}://${window.location.host}/ws${qs ? '?' + qs : ''}`;
 }
 
 function onMessage(event: MessageEvent) {
@@ -64,8 +69,9 @@ export function sendPrompt(text: string) {
   ws.send(encode(envelope));
 }
 
-export function connect() {
+export function connect(hullId?: string) {
   if (ws && ws.readyState === WebSocket.OPEN) return;
+  if (hullId) selectedHull = hullId;
 
   ws = new WebSocket(buildWsUrl());
   ws.binaryType = 'arraybuffer';
