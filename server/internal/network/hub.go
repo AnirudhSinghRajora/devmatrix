@@ -56,13 +56,11 @@ func (h *Hub) HandleWebSocket(w http.ResponseWriter, r *http.Request) {
 
 	var id, username string
 
-	if h.authValidator != nil {
-		// Authenticated mode: require JWT in query param.
-		tokenStr := r.URL.Query().Get("token")
-		if tokenStr == "" {
-			http.Error(w, `{"error":"missing token"}`, http.StatusUnauthorized)
-			return
-		}
+	tokenStr := r.URL.Query().Get("token")
+	hullID := r.URL.Query().Get("hull")
+
+	if h.authValidator != nil && tokenStr != "" {
+		// Authenticated mode: validate JWT.
 		var err error
 		id, username, err = h.authValidator.ValidateWSToken(tokenStr)
 		if err != nil {
@@ -78,9 +76,9 @@ func (h *Hub) HandleWebSocket(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	} else {
-		// Anonymous mode: auto-assign IDs.
-		id = fmt.Sprintf("player_%d", h.nextID.Add(1))
-		username = id
+		// Guest / anonymous mode.
+		id = fmt.Sprintf("guest_%d", h.nextID.Add(1))
+		username = fmt.Sprintf("Guest_%d", h.nextID.Load())
 	}
 
 	conn, err := websocket.Accept(w, r, &websocket.AcceptOptions{
@@ -100,7 +98,7 @@ func (h *Hub) HandleWebSocket(w http.ResponseWriter, r *http.Request) {
 	log.Info().Str("client", id).Str("username", username).Int("total", h.ClientCount()).Msg("client connected")
 
 	// Notify engine of new player.
-	h.joinCh <- JoinRequest{PlayerID: id, Username: username, Client: client}
+	h.joinCh <- JoinRequest{PlayerID: id, Username: username, Client: client, HullID: hullID}
 
 	// Connection-scoped context: when either pump dies, the other is cancelled.
 	connCtx, connCancel := context.WithCancel(r.Context())

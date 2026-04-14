@@ -3,7 +3,6 @@ package llm
 import (
 	"context"
 	"fmt"
-	"sort"
 
 	"github.com/DevMatrix/server/internal/game"
 	"github.com/rs/zerolog/log"
@@ -93,12 +92,24 @@ func (s *Service) processLLM(ctx context.Context, req game.LLMRequest) game.LLMR
 		Pos:       req.ShipPos,
 	}
 
-	systemPrompt := BuildSystemPrompt(req.AITier, shipInfo, nil) // TODO: pass nearby enemies
+	// Convert engine enemy snapshots to LLM prompt format.
+	enemies := make([]EnemyInfo, len(req.Enemies))
+	for i, e := range req.Enemies {
+		enemies[i] = EnemyInfo{
+			ID:        e.Username,
+			Distance:  e.Distance,
+			HealthPct: e.HealthPct,
+			ShieldPct: e.ShieldPct,
+		}
+	}
+
+	systemPrompt := BuildSystemPrompt(req.AITier, shipInfo, enemies)
 	userPrompt := fmt.Sprintf("Captain: %q", req.PromptText)
 
 	text, err := s.client.Generate(ctx, systemPrompt, userPrompt)
 	if err != nil {
-		return game.LLMResult{PlayerID: req.PlayerID, Error: fmt.Errorf("LLM call failed: %w", err)}
+		log.Warn().Err(err).Str("player", req.PlayerID).Msg("LLM call failed, falling back to mock")
+		return s.processMock(req)
 	}
 
 	behavior, err := game.ParseBehaviorJSON(text)
@@ -107,8 +118,8 @@ func (s *Service) processLLM(ctx context.Context, req game.LLMRequest) game.LLMR
 			Str("player", req.PlayerID).
 			Str("raw", text).
 			Err(err).
-			Msg("LLM returned invalid behavior JSON")
-		return game.LLMResult{PlayerID: req.PlayerID, Error: fmt.Errorf("AI processor failed to interpret that command: %v", err)}
+			Msg("LLM returned invalid behavior JSON, falling back to mock")
+		return s.processMock(req)
 	}
 
 	log.Info().
@@ -118,23 +129,3 @@ func (s *Service) processLLM(ctx context.Context, req game.LLMRequest) game.LLMR
 	return game.LLMResult{PlayerID: req.PlayerID, Behavior: behavior}
 }
 
-// BuildNearbyEnemies creates sorted enemy info from the game state ships map.
-// Called by the engine before submitting an LLM request.
-func BuildNearbyEnemies(ship *game.Ship, ships map[string]*game.Ship) []EnemyInfo {
-	enemies := make([]EnemyInfo, 0, len(ships)-1)
-	for _, s := range ships {
-		if s.ID == ship.ID {
-			continue
-		}
-		enemies = append(enemies, EnemyInfo{
-			ID:        s.ID,
-			Distance:  ship.Position.DistTo(s.Position),
-			HealthPct: s.HealthPct(),
-			ShieldPct: s.ShieldPct(),
-		})
-	}
-	sort.Slice(enemies, func(i, j int) bool {
-		return enemies[i].Distance < enemies[j].Distance
-	})
-	return enemies
-}

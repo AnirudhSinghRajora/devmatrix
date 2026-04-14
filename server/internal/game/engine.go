@@ -163,7 +163,7 @@ func (e *Engine) drainJoins() {
 }
 
 // buildShipForPlayer creates a Ship from the DB loadout if available,
-// otherwise uses default stats for anonymous mode.
+// otherwise uses default stats for guest / anonymous mode.
 func (e *Engine) buildShipForPlayer(req network.JoinRequest) *Ship {
 	ship := &Ship{
 		ID:       req.PlayerID,
@@ -182,7 +182,7 @@ func (e *Engine) buildShipForPlayer(req network.JoinRequest) *Ship {
 	}
 
 	if e.itemCache != nil && e.queries != nil {
-		// Authenticated mode: load from DB.
+		// Try authenticated mode: load full profile from DB.
 		userID, err := uuid.Parse(req.PlayerID)
 		if err == nil {
 			profile, err := e.queries.GetProfile(context.Background(), userID)
@@ -196,7 +196,7 @@ func (e *Engine) buildShipForPlayer(req network.JoinRequest) *Ship {
 				ship.MaxSpeed = hull.MaxSpeed
 				ship.Thrust = hull.Thrust
 				ship.CollisionRadius = hull.CollisionRadius
-				ship.Mass = hull.MaxHealth * 0.1 // derive mass from hull HP
+				ship.Mass = hull.MaxHealth * 0.1
 				ship.Drag = 0.3
 				ship.TurnRate = 3.0
 				ship.MaxShield = shld.MaxShield
@@ -217,7 +217,37 @@ func (e *Engine) buildShipForPlayer(req network.JoinRequest) *Ship {
 		}
 	}
 
-	// Anonymous / fallback defaults.
+	// Guest / anonymous: use the requested hull from the lobby (if valid),
+	// with default weapon and shield. Falls back to hull_basic.
+	hullID := req.HullID
+	if hullID == "" {
+		hullID = "hull_basic"
+	}
+
+	if e.itemCache != nil {
+		hull := e.itemCache.GetHull(hullID)
+		shld := e.itemCache.GetShield("shield_basic")
+
+		ship.MaxHealth = hull.MaxHealth
+		ship.Health = hull.MaxHealth
+		ship.MaxSpeed = hull.MaxSpeed
+		ship.Thrust = hull.Thrust
+		ship.Mass = hull.MaxHealth * 0.1
+		ship.Drag = 0.3
+		ship.TurnRate = 3.0
+		ship.MaxShield = shld.MaxShield
+		ship.Shield = shld.MaxShield
+		ship.ShieldRegen = shld.Regen
+		ship.ShieldDelay = shld.Delay
+		ship.PrimaryWeapon = StarterLaser
+		ship.AITier = 1
+		ship.HullID = hullID
+		ship.HitShape = hullShapeFor(hullID)
+		ship.CollisionRadius = boundingRadius(ship.HitShape)
+		return ship
+	}
+
+	// Pure anonymous (no DB at all): hardcoded defaults.
 	ship.MaxSpeed = 50
 	ship.Thrust = 40
 	ship.Mass = 10
@@ -232,8 +262,8 @@ func (e *Engine) buildShipForPlayer(req network.JoinRequest) *Ship {
 	ship.PrimaryWeapon = StarterLaser
 	ship.CollisionRadius = 2.0
 	ship.AITier = 1
-	ship.HullID = "hull_basic"
-	ship.HitShape = hullShapeFor("hull_basic")
+	ship.HullID = hullID
+	ship.HitShape = hullShapeFor(hullID)
 	ship.CollisionRadius = boundingRadius(ship.HitShape)
 	return ship
 }
@@ -331,6 +361,20 @@ func (e *Engine) handlePrompt(req network.PromptRequest) {
 	// Record cooldown.
 	e.cooldown.Record(req.PlayerID)
 
+	// Gather nearby enemy info for the LLM prompt.
+	var enemies []EnemySnapshot
+	for _, s := range e.state.Ships {
+		if s.ID == ship.ID || !s.IsAlive {
+			continue
+		}
+		enemies = append(enemies, EnemySnapshot{
+			Username:  s.Username,
+			Distance:  ship.Position.DistTo(s.Position),
+			HealthPct: s.HealthPct(),
+			ShieldPct: s.ShieldPct(),
+		})
+	}
+
 	// Queue LLM request.
 	llmReq := LLMRequest{
 		PlayerID:   req.PlayerID,
@@ -339,6 +383,7 @@ func (e *Engine) handlePrompt(req network.PromptRequest) {
 		HealthPct:  ship.HealthPct(),
 		ShieldPct:  ship.ShieldPct(),
 		AITier:     ship.AITier,
+		Enemies:    enemies,
 	}
 	select {
 	case e.llmReqCh <- llmReq:

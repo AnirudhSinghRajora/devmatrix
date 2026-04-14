@@ -81,9 +81,9 @@ func validateBehaviorBlock(b *BehaviorBlock) error {
 		}
 	}
 
-	// Validate patrol waypoints.
+	// Patrol without waypoints falls back to wander.
 	if b.Movement == "patrol" && len(b.MovementParams.Waypoints) == 0 {
-		return fmt.Errorf("patrol requires at least one waypoint")
+		b.Movement = "wander"
 	}
 
 	return nil

@@ -12,11 +12,15 @@ func (e *Engine) resolveTarget(ship *Ship, selector string) *Ship {
 		return nil
 	}
 
-	// Specific player by name: "player:<id>"
+	// Specific player by name or ID: "player:<name>"
 	if strings.HasPrefix(selector, "player:") {
 		name := strings.TrimPrefix(selector, "player:")
+		nameLower := strings.ToLower(name)
 		for _, s := range e.state.Ships {
-			if s.ID != ship.ID && s.ID == name {
+			if s.ID == ship.ID {
+				continue
+			}
+			if s.ID == name || strings.EqualFold(s.Username, nameLower) {
 				return s
 			}
 		}

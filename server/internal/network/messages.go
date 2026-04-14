@@ -72,6 +72,7 @@ type JoinRequest struct {
 	PlayerID string
 	Username string
 	Client   *Client
+	HullID   string // optional hull selection from query param (guests)
 }
 
 // PromptRequest is sent from the readPump to the Engine when a client submits a prompt.

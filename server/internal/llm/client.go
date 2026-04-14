@@ -60,7 +60,7 @@ func (c *Client) Generate(ctx context.Context, systemPrompt, userPrompt string) 
 		Messages: []chatMessage{
 			{Role: "user", Content: combined},
 		},
-		MaxTokens:   200,
+		MaxTokens:   512,
 		Temperature: 0.1, // low temperature for deterministic JSON
 	}
 

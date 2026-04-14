@@ -140,8 +140,50 @@ func (e *Engine) desiredChase(ship *Ship, b *BehaviorBlock, maxSpeed float32) {
 		e.desiredWander(ship, b, maxSpeed*0.3)
 		return
 	}
-	dir := target.Position.Sub(ship.Position).Normalize()
+
+	toTarget := target.Position.Sub(ship.Position)
+	dist := toTarget.Length()
+	if dist < 0.1 {
+		ship.DesiredVelocity = Vec3{}
+		return
+	}
+
+	dir := toTarget.Scale(1 / dist)
 	speed := clampF32(b.MovementParams.Speed, 1, maxSpeed)
+
+	// Standoff distance: keep well outside collision range.
+	standoff := ship.CollisionRadius + target.CollisionRadius + 20.0
+
+	// Compute how fast we're currently approaching the target.
+	approachSpeed := ship.Velocity.Dot(dir)
+
+	// Braking distance from current approach speed: v²/(2a).
+	// Use thrust as deceleration; this matches the physics in applyThrust.
+	const baseMass float32 = 10.0
+	decel := ship.Thrust * (baseMass / ship.Mass)
+	if decel < 1 {
+		decel = 1
+	}
+	brakeDist := approachSpeed * approachSpeed / (2 * decel)
+
+	remaining := dist - standoff
+
+	if remaining <= 0 {
+		// Inside standoff — actively push away to counteract momentum.
+		ship.DesiredVelocity = dir.Scale(-speed * 0.5)
+		return
+	}
+
+	// Start decelerating when we're close enough that our current momentum
+	// would carry us past the standoff.  The brake zone is whichever is
+	// larger: the inertia-based braking distance or a minimum ramp zone.
+	minRamp := speed * 1.5
+	rampDist := brakeDist + minRamp
+	if remaining < rampDist {
+		t := remaining / rampDist
+		speed *= t * t // quadratic ramp: aggressive braking near standoff
+	}
+
 	ship.DesiredVelocity = dir.Scale(speed)
 }
 
