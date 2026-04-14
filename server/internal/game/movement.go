@@ -41,12 +41,19 @@ func (e *Engine) buildShipContext(ship *Ship) *ShipContext {
 		speedPct = speed / maxSpd * 100
 	}
 
+	aliveEnemies := 0
+	for _, s := range e.state.Ships {
+		if s.ID != ship.ID && s.IsAlive {
+			aliveEnemies++
+		}
+	}
+
 	ctx := &ShipContext{
 		HealthPct:  float64(ship.HealthPct()),
 		ShieldPct:  float64(ship.ShieldPct()),
 		Speed:      speed,
 		SpeedPct:   speedPct,
-		EnemyCount: len(e.state.Ships) - 1,
+		EnemyCount: aliveEnemies,
 	}
 
 	// Count incoming projectiles heading toward this ship.
@@ -333,7 +340,11 @@ func applyThrust(ship *Ship, dt float32) {
 
 	// Mass-scaled acceleration: baseline mass=10 keeps Scout unchanged.
 	const baseMass float32 = 10.0
-	maxAccel := ship.Thrust * dt * (baseMass / ship.Mass)
+	mass := ship.Mass
+	if mass < 1 {
+		mass = 1
+	}
+	maxAccel := ship.Thrust * dt * (baseMass / mass)
 	if steerLen > maxAccel {
 		steer = steer.Scale(maxAccel / steerLen)
 	}
@@ -382,7 +393,11 @@ func applyRotation(ship *Ship, dt float32) {
 	}
 	target := quatLookDir(ship.Velocity)
 	const baseMass float32 = 10.0
-	t := ship.TurnRate * dt * (baseMass / ship.Mass)
+	mass := ship.Mass
+	if mass < 1 {
+		mass = 1
+	}
+	t := ship.TurnRate * dt * (baseMass / mass)
 	if t > 1 {
 		t = 1
 	}

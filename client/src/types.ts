@@ -50,6 +50,7 @@ export interface WireGameEvent {
   h?: boolean;
   k?: string;
   v?: string;
+  st?: number; // killer's kill streak
 }
 
 // Server → Client: world state, 30 TPS.
@@ -133,6 +134,7 @@ export interface KillFeedEntry {
   killerName: string;
   victimName: string;
   time: number;
+  streak: number;
 }
 
 export interface ProjectileEntity {

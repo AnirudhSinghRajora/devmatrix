@@ -300,8 +300,8 @@ func (e *Engine) drainLLMResults() {
 		select {
 		case result := <-e.llmResultCh:
 			ship := e.state.Ships[result.PlayerID]
-			if ship == nil {
-				continue // player left while prompt was processing
+			if ship == nil || !ship.IsAlive {
+				continue // player left or died while prompt was processing
 			}
 			if result.Error != nil {
 				e.sendPlayerError(result.PlayerID, result.Error.Error(), 0)
@@ -344,6 +344,10 @@ func (e *Engine) handlePrompt(req network.PromptRequest) {
 	if ship == nil {
 		return
 	}
+	if !ship.IsAlive {
+		e.sendPlayerError(req.PlayerID, "Cannot issue orders while dead", 0)
+		return
+	}
 
 	// Enforce cooldown.
 	if ok, remaining := e.cooldown.CanSubmit(req.PlayerID); !ok {
@@ -357,9 +361,6 @@ func (e *Engine) handlePrompt(req network.PromptRequest) {
 	if len(text) > maxLen {
 		text = text[:maxLen]
 	}
-
-	// Record cooldown.
-	e.cooldown.Record(req.PlayerID)
 
 	// Gather nearby enemy info for the LLM prompt.
 	var enemies []EnemySnapshot
@@ -375,7 +376,7 @@ func (e *Engine) handlePrompt(req network.PromptRequest) {
 		})
 	}
 
-	// Queue LLM request.
+	// Queue LLM request — only record cooldown on successful send.
 	llmReq := LLMRequest{
 		PlayerID:   req.PlayerID,
 		PromptText: text,
@@ -387,6 +388,7 @@ func (e *Engine) handlePrompt(req network.PromptRequest) {
 	}
 	select {
 	case e.llmReqCh <- llmReq:
+		e.cooldown.Record(req.PlayerID)
 		log.Info().Str("player", req.PlayerID).Str("prompt", text).Msg("prompt queued")
 	default:
 		log.Warn().Str("player", req.PlayerID).Msg("LLM queue full")
@@ -430,6 +432,11 @@ func (e *Engine) updateEntities() {
 	for _, ship := range e.state.Ships {
 		if !ship.IsAlive {
 			continue
+		}
+
+		// Tick down spawn protection.
+		if ship.SpawnProtection > 0 {
+			ship.SpawnProtection -= e.dt
 		}
 
 		// 1. Behavior → desired velocity + combat.
@@ -516,6 +523,7 @@ func (e *Engine) buildSnapshot() network.StateUpdatePayload {
 				Hit:    ev.Hit,
 				Killer: ev.Killer,
 				Victim: ev.Victim,
+				Streak: ev.Streak,
 			}
 		}
 	}

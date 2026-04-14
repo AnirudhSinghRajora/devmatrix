@@ -7,6 +7,7 @@ import { getToken } from './api';
 let ws: WebSocket | null = null;
 let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 let selectedHull: string | null = null;
+let reconnectAttempts = 0;
 
 function buildWsUrl(): string {
   const proto = window.location.protocol === 'https:' ? 'wss' : 'ws';
@@ -73,11 +74,16 @@ export function connect(hullId?: string) {
   if (ws && ws.readyState === WebSocket.OPEN) return;
   if (hullId) selectedHull = hullId;
 
+  useGameStore.getState().setConnectionState(
+    reconnectAttempts > 0 ? 'reconnecting' : 'connecting',
+  );
+
   ws = new WebSocket(buildWsUrl());
   ws.binaryType = 'arraybuffer';
 
   ws.onopen = () => {
     console.log('[ws] connected');
+    reconnectAttempts = 0;
     useGameStore.getState().setConnected(true);
   };
 
@@ -88,10 +94,14 @@ export function connect(hullId?: string) {
     useGameStore.getState().setConnected(false);
     ws = null;
     if (!reconnectTimer) {
+      // Exponential backoff: 1s → 2s → 4s → 8s → 15s max.
+      const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 15000);
+      reconnectAttempts++;
+      console.log(`[ws] reconnecting in ${delay}ms (attempt ${reconnectAttempts})`);
       reconnectTimer = setTimeout(() => {
         reconnectTimer = null;
         connect();
-      }, 3000);
+      }, delay);
     }
   };
 
@@ -106,6 +116,8 @@ export function disconnect() {
     clearTimeout(reconnectTimer);
     reconnectTimer = null;
   }
+  reconnectAttempts = 0;
   ws?.close();
   ws = null;
+  useGameStore.getState().setConnectionState('disconnected');
 }

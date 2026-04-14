@@ -8,6 +8,8 @@ import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 const _target = new THREE.Vector3();
 const _prevCam = new THREE.Vector3();
 const _currCam = new THREE.Vector3();
+const _desiredPos = new THREE.Vector3();
+const _camDelta = new THREE.Vector3();
 const CAMERA_OFFSET = new THREE.Vector3(0, 12, 25);
 const FOLLOW_SPEED = 0.05;
 
@@ -59,11 +61,9 @@ export default function CameraFollow() {
     const controls = controlsRef.current;
     if (controls) {
       controls.target.lerp(_target, FOLLOW_SPEED);
-      // Shift camera by the same delta to keep relative orbit angle.
-      const desiredPos = _target.clone().add(
-        camera.position.clone().sub(controls.target),
-      );
-      camera.position.lerp(desiredPos, FOLLOW_SPEED);
+      _camDelta.copy(camera.position).sub(controls.target);
+      _desiredPos.copy(_target).add(_camDelta);
+      camera.position.lerp(_desiredPos, FOLLOW_SPEED);
       controls.update();
     }
   });

@@ -17,7 +17,7 @@ func (e *Engine) resolveTarget(ship *Ship, selector string) *Ship {
 		name := strings.TrimPrefix(selector, "player:")
 		nameLower := strings.ToLower(name)
 		for _, s := range e.state.Ships {
-			if s.ID == ship.ID {
+			if s.ID == ship.ID || !s.IsAlive {
 				continue
 			}
 			if s.ID == name || strings.EqualFold(s.Username, nameLower) {
@@ -42,7 +42,7 @@ func (e *Engine) bestEnemy(ship *Ship, selector string) *Ship {
 	first := true
 
 	for _, s := range e.state.Ships {
-		if s.ID == ship.ID {
+		if s.ID == ship.ID || !s.IsAlive {
 			continue
 		}
 
@@ -77,7 +77,7 @@ func (e *Engine) bestEnemy(ship *Ship, selector string) *Ship {
 func (e *Engine) randomEnemy(ship *Ship) *Ship {
 	candidates := make([]*Ship, 0, len(e.state.Ships)-1)
 	for _, s := range e.state.Ships {
-		if s.ID != ship.ID {
+		if s.ID != ship.ID && s.IsAlive {
 			candidates = append(candidates, s)
 		}
 	}

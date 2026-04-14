@@ -5,6 +5,7 @@ const RESPAWN_TIME = 5; // must match server's RespawnTimer (5.0s)
 
 export default function DeathScreen() {
   const myDeathTime = useGameStore((s) => s.myDeathTime);
+  const myKillerName = useGameStore((s) => s.myKillerName);
   const [countdown, setCountdown] = useState(RESPAWN_TIME);
 
   useEffect(() => {
@@ -33,6 +34,9 @@ export default function DeathScreen() {
     <div style={overlayStyle}>
       <div style={contentStyle}>
         <div style={titleStyle}>YOU DIED</div>
+        {myKillerName && (
+          <div style={killerStyle}>Killed by <span style={{ color: 'var(--hud-red)' }}>{myKillerName}</span></div>
+        )}
         <div style={subtitleStyle}>
           {isRespawning ? 'Respawning...' : `Respawning in ${Math.ceil(countdown)}s`}
         </div>
@@ -64,26 +68,27 @@ const overlayStyle: React.CSSProperties = {
 const contentStyle: React.CSSProperties = {
   textAlign: 'center',
   fontFamily: 'var(--hud-font)',
+  padding: '0 24px',
 };
 
 const titleStyle: React.CSSProperties = {
-  fontSize: 48,
+  fontSize: 'clamp(28px, 10vw, 48px)',
   fontWeight: 'bold',
   color: 'var(--hud-red)',
-  letterSpacing: 8,
+  letterSpacing: 'clamp(4px, 2vw, 8px)',
   textShadow: '0 0 30px rgba(255, 68, 68, 0.6), 0 0 60px rgba(255, 68, 68, 0.3)',
   marginBottom: 16,
 };
 
 const subtitleStyle: React.CSSProperties = {
-  fontSize: 18,
+  fontSize: 'clamp(14px, 3.5vw, 18px)',
   color: 'var(--hud-text)',
   letterSpacing: 2,
   marginBottom: 20,
 };
 
 const barContainerStyle: React.CSSProperties = {
-  width: 240,
+  width: 'min(240px, 70vw)',
   height: 4,
   background: 'rgba(255, 255, 255, 0.1)',
   borderRadius: 2,
@@ -97,6 +102,13 @@ const barFillStyle: React.CSSProperties = {
   borderRadius: 2,
   transition: 'width 0.05s linear',
   boxShadow: '0 0 8px rgba(255, 68, 68, 0.5)',
+};
+
+const killerStyle: React.CSSProperties = {
+  fontSize: 16,
+  color: 'var(--hud-text)',
+  letterSpacing: 1,
+  marginBottom: 12,
 };
 
 const tipStyle: React.CSSProperties = {

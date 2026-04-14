@@ -33,6 +33,11 @@ export default function KillFeed() {
           <span style={{ color: 'var(--hud-red)' }}>{entry.killerName || entry.killer.slice(0, 8)}</span>
           {' \u26A1 '}
           <span style={{ color: 'var(--hud-text-dim)' }}>{entry.victimName || entry.victim.slice(0, 8)}</span>
+          {entry.streak >= 3 && (
+            <span style={{ marginLeft: 6, color: '#ffaa00', fontSize: '0.85em' }}>
+              {entry.streak >= 5 ? 'RAMPAGE' : 'STREAK'} x{entry.streak}
+            </span>
+          )}
         </div>
       ))}
     </div>

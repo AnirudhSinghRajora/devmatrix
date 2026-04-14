@@ -122,10 +122,10 @@ export default function LobbyScreen({ onLaunch }: Props) {
                 background: isSelected ? 'rgba(0, 204, 255, 0.08)' : 'rgba(0, 0, 0, 0.6)',
               }}
             >
-              <div style={{ fontSize: 14, fontWeight: 'bold', color: isSelected ? '#00ccff' : '#ccc' }}>
+              <div style={{ fontSize: 'clamp(11px, 2.5vw, 14px)', fontWeight: 'bold', color: isSelected ? '#00ccff' : '#ccc' }}>
                 {h.name}
               </div>
-              <div style={{ fontSize: 10, color: isOwned ? '#888' : '#ff4444', marginTop: 2 }}>
+              <div style={{ fontSize: 'clamp(9px, 2vw, 10px)', color: isOwned ? '#888' : '#ff4444', marginTop: 2 }}>
                 {!isOwned ? `🔒 ${h.price} coins` : isSelected ? 'SELECTED' : ''}
               </div>
             </button>
@@ -181,7 +181,7 @@ export default function LobbyScreen({ onLaunch }: Props) {
       </div>
 
       {/* Launch button + Shop */}
-      <div style={{ display: 'flex', gap: 12, alignItems: 'center', zIndex: 1 }}>
+      <div style={{ display: 'flex', gap: 12, alignItems: 'center', zIndex: 1, flexWrap: 'wrap', justifyContent: 'center' }}>
         {isLoggedIn && (
           <button onClick={() => setShowShop(true)} style={shopBtnStyle}>SHOP</button>
         )}
@@ -236,61 +236,69 @@ const wrapperStyle: React.CSSProperties = {
   display: 'flex', flexDirection: 'column',
   alignItems: 'center', justifyContent: 'center',
   fontFamily: 'var(--hud-font, monospace)', color: '#ddd',
-  overflow: 'hidden',
+  overflow: 'auto',
+  padding: '24px 16px',
+  boxSizing: 'border-box',
 };
 
 const starsStyle: React.CSSProperties = {
   position: 'absolute', inset: 0,
   background: 'radial-gradient(1px 1px at 20% 30%, #fff3 0%, transparent 100%), radial-gradient(1px 1px at 80% 70%, #fff2 0%, transparent 100%), radial-gradient(1px 1px at 50% 50%, #fff1 0%, transparent 100%)',
   opacity: 0.4,
+  pointerEvents: 'none',
 };
 
 const titleAreaStyle: React.CSSProperties = {
-  textAlign: 'center', marginBottom: 24, zIndex: 1,
+  textAlign: 'center', marginBottom: 'clamp(12px, 3vh, 24px)', zIndex: 1,
 };
 
 const titleStyle: React.CSSProperties = {
-  fontSize: 36, fontWeight: 'bold', letterSpacing: 12,
+  fontSize: 'clamp(22px, 6vw, 36px)', fontWeight: 'bold', letterSpacing: 'clamp(4px, 2vw, 12px)',
   color: '#00ccff',
   textShadow: '0 0 20px rgba(0, 204, 255, 0.4)',
   margin: 0,
 };
 
 const subtitleStyle: React.CSSProperties = {
-  fontSize: 12, color: '#666', letterSpacing: 6, marginTop: 8,
+  fontSize: 'clamp(10px, 2.5vw, 12px)', color: '#666', letterSpacing: 'clamp(2px, 1vw, 6px)', marginTop: 8,
 };
 
 const selectorRowStyle: React.CSSProperties = {
-  display: 'flex', gap: 8, marginBottom: 20, zIndex: 1,
+  display: 'flex', gap: 8, marginBottom: 'clamp(12px, 2vh, 20px)', zIndex: 1,
+  flexWrap: 'wrap', justifyContent: 'center',
+  maxWidth: '100%',
 };
 
 const cardStyle: React.CSSProperties = {
-  padding: '10px 20px', borderRadius: 6,
+  padding: 'clamp(8px, 1.5vw, 10px) clamp(12px, 2.5vw, 20px)', borderRadius: 6,
   border: '1px solid #333',
   cursor: 'pointer', fontFamily: 'inherit',
   transition: 'border-color 0.2s, background 0.2s',
-  textAlign: 'center', minWidth: 90,
+  textAlign: 'center', minWidth: 70,
 };
 
 const mainStyle: React.CSSProperties = {
-  display: 'flex', gap: 32, alignItems: 'center',
-  zIndex: 1, marginBottom: 24,
+  display: 'flex', gap: 'clamp(16px, 3vw, 32px)', alignItems: 'center',
+  zIndex: 1, marginBottom: 'clamp(16px, 3vh, 24px)',
+  flexWrap: 'wrap', justifyContent: 'center',
+  maxWidth: '100%',
 };
 
 const previewStyle: React.CSSProperties = {
-  width: 400, height: 300,
+  width: 'min(400px, 85vw)', height: 'min(300px, 50vh)',
   borderRadius: 8,
   overflow: 'hidden',
   border: '1px solid #222',
   background: 'rgba(0, 0, 0, 0.4)',
+  flexShrink: 0,
 };
 
 const statsPanelStyle: React.CSSProperties = {
-  width: 220,
+  width: 'min(220px, 85vw)',
 };
 
 const shipNameStyle: React.CSSProperties = {
-  margin: '0 0 6px 0', fontSize: 22, color: '#fff',
+  margin: '0 0 6px 0', fontSize: 'clamp(18px, 4vw, 22px)', color: '#fff',
   letterSpacing: 3,
 };
 
@@ -305,8 +313,9 @@ const barBgStyle: React.CSSProperties = {
 };
 
 const launchBtnStyle: React.CSSProperties = {
-  padding: '14px 60px', fontSize: 16, fontWeight: 'bold',
-  fontFamily: 'inherit', letterSpacing: 6,
+  padding: 'clamp(10px, 2vw, 14px) clamp(32px, 8vw, 60px)',
+  fontSize: 'clamp(14px, 3vw, 16px)', fontWeight: 'bold',
+  fontFamily: 'inherit', letterSpacing: 'clamp(3px, 1vw, 6px)',
   color: '#000', background: '#00ccff',
   border: 'none', borderRadius: 6,
   boxShadow: '0 0 20px rgba(0, 204, 255, 0.3)',
@@ -315,7 +324,8 @@ const launchBtnStyle: React.CSSProperties = {
 };
 
 const shopBtnStyle: React.CSSProperties = {
-  padding: '14px 30px', fontSize: 14, fontWeight: 'bold',
+  padding: 'clamp(10px, 2vw, 14px) clamp(18px, 4vw, 30px)',
+  fontSize: 'clamp(12px, 2.5vw, 14px)', fontWeight: 'bold',
   fontFamily: 'inherit', letterSpacing: 4,
   color: '#ffaa00', background: 'transparent',
   border: '1px solid #ffaa0055', borderRadius: 6,
@@ -324,6 +334,7 @@ const shopBtnStyle: React.CSSProperties = {
 };
 
 const profileInfoStyle: React.CSSProperties = {
-  position: 'absolute', bottom: 16,
+  marginTop: 16,
   fontSize: 11, color: '#555', letterSpacing: 2,
+  zIndex: 1, textAlign: 'center',
 };

@@ -12,7 +12,8 @@ type CellKey struct {
 // SpatialGrid accelerates proximity queries for ships and projectiles.
 // Rebuilt from scratch once per tick (cheap: one map clear + N inserts).
 type SpatialGrid struct {
-	cells map[CellKey][]*Ship
+	cells   map[CellKey][]*Ship
+	scratch []*Ship // reusable buffer for GetNearby results
 }
 
 // NewSpatialGrid creates an empty spatial grid.
@@ -43,7 +44,7 @@ func (g *SpatialGrid) Rebuild(ships map[string]*Ship) {
 }
 
 // GetNearby returns all ships within the cells covered by a bounding sphere.
-// The caller must perform a precise distance check on the results.
+// The returned slice is reused between calls — callers must not retain it.
 func (g *SpatialGrid) GetNearby(pos Vec3, radius float32) []*Ship {
 	minKey := CellKey{
 		X: int32(math.Floor(float64((pos.X - radius) / cellSize))),
@@ -56,13 +57,13 @@ func (g *SpatialGrid) GetNearby(pos Vec3, radius float32) []*Ship {
 		Z: int32(math.Floor(float64((pos.Z + radius) / cellSize))),
 	}
 
-	var result []*Ship
+	g.scratch = g.scratch[:0]
 	for x := minKey.X; x <= maxKey.X; x++ {
 		for y := minKey.Y; y <= maxKey.Y; y++ {
 			for z := minKey.Z; z <= maxKey.Z; z++ {
-				result = append(result, g.cells[CellKey{x, y, z}]...)
+				g.scratch = append(g.scratch, g.cells[CellKey{x, y, z}]...)
 			}
 		}
 	}
-	return result
+	return g.scratch
 }

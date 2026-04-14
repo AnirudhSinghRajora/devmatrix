@@ -12,6 +12,7 @@ import AuthScreen from './components/AuthScreen';
 import LobbyScreen from './components/LobbyScreen';
 import Shop from './components/Shop';
 import Leaderboard from './components/Leaderboard';
+import ConnectionStatus from './components/ConnectionStatus';
 
 function App() {
   const [authed, setAuthed] = useState<boolean | null>(null); // null = checking
@@ -53,19 +54,20 @@ function App() {
   return (
     <>
       <Scene />
+      <ConnectionStatus />
       <LiveLeaderboard />
 
       {/* HUD buttons */}
       {isLoggedIn && (
         <div style={{
-          position: 'absolute', bottom: 12, left: 12,
-          display: 'flex', gap: 8, pointerEvents: 'auto',
+          position: 'absolute', bottom: 'max(12px, env(safe-area-inset-bottom, 0px))', left: 12,
+          display: 'flex', gap: 6, pointerEvents: 'auto', flexWrap: 'wrap',
         }}>
           <button onClick={() => setShowShop(true)} style={hudBtnStyle}>SHOP</button>
-          <button onClick={() => setShowLeaderboard(true)} style={hudBtnStyle}>LEADERBOARD</button>
-          <button onClick={() => { clearToken(); setAuthed(false); disconnect(); }} style={{
+          <button onClick={() => setShowLeaderboard(true)} style={hudBtnStyle}>LB</button>
+          <button onClick={() => { clearToken(); setAuthed(false); setInGame(false); setLaunchHull(null); disconnect(); }} style={{
             ...hudBtnStyle, color: '#f44', borderColor: '#f44',
-          }}>LOGOUT</button>
+          }}>OUT</button>
         </div>
       )}
 
@@ -83,8 +85,9 @@ function App() {
 
 const hudBtnStyle: React.CSSProperties = {
   background: 'rgba(0,0,0,0.7)', color: '#0f0', border: '1px solid #0f03',
-  padding: '6px 14px', borderRadius: 4, cursor: 'pointer',
+  padding: '8px 14px', borderRadius: 4, cursor: 'pointer',
   fontFamily: 'monospace', fontSize: 12, fontWeight: 'bold',
+  minHeight: 36, minWidth: 36,
 };
 
 export default App;

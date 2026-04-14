@@ -16,8 +16,11 @@ import { GameEventType } from '../types';
 
 const TICK_DURATION = 1000 / 30; // 33.33ms
 
+export type ConnectionState = 'connecting' | 'open' | 'reconnecting' | 'disconnected';
+
 interface GameState {
   connected: boolean;
+  connectionState: ConnectionState;
   myPlayerId: string | null;
   tick: number;
   lastUpdateTime: number;
@@ -26,6 +29,7 @@ interface GameState {
 
   // Death/respawn.
   myDeathTime: number | null; // performance.now() when own player died, null if alive
+  myKillerName: string | null; // who killed us (for death screen)
   justRespawned: boolean; // true for one tick after respawn, triggers cooldown reset
 
   // Phase 3: behavior + prompt feedback.
@@ -41,6 +45,7 @@ interface GameState {
   nextVfxId: number;
 
   setConnected: (connected: boolean) => void;
+  setConnectionState: (state: ConnectionState) => void;
   applyWelcome: (welcome: WireWelcome) => void;
   applyStateUpdate: (update: WireStateUpdate) => void;
   applyBehaviorEvent: (event: WireBehaviorEvent) => void;
@@ -54,12 +59,14 @@ function wireToSnapshot(e: WireEntitySnapshot): Snapshot {
 
 export const useGameStore = create<GameState>((set) => ({
   connected: false,
+  connectionState: 'disconnected' as ConnectionState,
   myPlayerId: null,
   tick: 0,
   lastUpdateTime: 0,
   entities: new Map(),
   tickDuration: TICK_DURATION,
   myDeathTime: null,
+  myKillerName: null,
   justRespawned: false,
   currentBehavior: null,
   errorMessage: null,
@@ -74,8 +81,10 @@ export const useGameStore = create<GameState>((set) => ({
     // Keep entities and world state on disconnect so ships extrapolate
     // smoothly during brief network hiccups.  applyWelcome will
     // replace everything when the connection is re-established.
-    set({ connected });
+    set({ connected, connectionState: connected ? 'open' : 'reconnecting' });
   },
+
+  setConnectionState: (connectionState) => set({ connectionState }),
 
   applyWelcome: (welcome) =>
     set(() => {
@@ -163,6 +172,7 @@ export const useGameStore = create<GameState>((set) => ({
 
       // Process combat events.
       let myDeathTime = state.myDeathTime;
+      let myKillerName = state.myKillerName;
       let justRespawned = false;
       if (update.ev && update.ev.length > 0) {
         for (const ev of update.ev) {
@@ -196,6 +206,7 @@ export const useGameStore = create<GameState>((set) => ({
                   killerName: killerEntity?.username || ev.k.slice(0, 8),
                   victimName: victimEntity?.username || ev.v.slice(0, 8),
                   time: now,
+                  streak: ev.st ?? 0,
                 }];
                 const victim = entities.get(ev.v);
                 if (victim) {
@@ -205,9 +216,10 @@ export const useGameStore = create<GameState>((set) => ({
                     time: now,
                   }];
                 }
-                // Track own death.
+                // Track own death + who killed us.
                 if (ev.v === state.myPlayerId) {
                   myDeathTime = now;
+                  myKillerName = killerEntity?.username || ev.k.slice(0, 8);
                 }
               }
               break;
@@ -215,6 +227,7 @@ export const useGameStore = create<GameState>((set) => ({
               // Own player respawned — clear death, signal cooldown reset.
               if (ev.v === state.myPlayerId) {
                 myDeathTime = null;
+                myKillerName = null;
                 justRespawned = true;
               }
               break;
@@ -237,6 +250,7 @@ export const useGameStore = create<GameState>((set) => ({
         projectiles,
         nextVfxId,
         myDeathTime,
+        myKillerName,
         justRespawned,
       };
     }),

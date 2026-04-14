@@ -47,7 +47,7 @@ export default function HealthPanel() {
         fontFamily: 'var(--hud-font)',
         fontSize: 11,
         pointerEvents: 'none',
-        width: 'min(190px, 40vw)',
+        width: 'min(190px, 45vw)',
       }}
     >
       {sorted.map((e) => {

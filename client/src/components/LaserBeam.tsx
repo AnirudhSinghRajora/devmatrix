@@ -22,9 +22,14 @@ export default function LaserBeam({ from, to, hit, time }: LaserBeamProps) {
     const dir = end.clone().sub(start);
     const len = dir.length();
     const q = new THREE.Quaternion();
-    q.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.clone().normalize());
+    if (len > 0.001) {
+      q.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.clone().normalize());
+    }
     return { midpoint: mid, length: len, quaternion: q };
   }, [from, to]);
+
+  // Don't render zero-length beams (from == to produces invalid geometry).
+  if (length < 0.001) return null;
 
   useFrame(() => {
     const core = coreRef.current;

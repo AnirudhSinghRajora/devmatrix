@@ -208,6 +208,9 @@ func (e *Engine) updateProjectiles() {
 
 // applyDamage reduces shield then health, and processes kill on death.
 func (e *Engine) applyDamage(target *Ship, damage float32, attackerID string) {
+	if target.SpawnProtection > 0 {
+		return
+	}
 	target.LastDamagedBy = attackerID
 	target.ShieldTimer = target.ShieldDelay // reset regen timer
 
@@ -283,11 +286,19 @@ func (e *Engine) processKill(victim *Ship, killerID string) {
 	victim.DesiredVelocity = Vec3{}
 	victim.RespawnTimer = 5.0
 
+	// Increment killer's streak.
+	var streak int
+	if killer := e.state.Ships[killerID]; killer != nil {
+		killer.KillStreak++
+		streak = killer.KillStreak
+	}
+
 	e.state.Events = append(e.state.Events, GameEvent{
 		Type:   EvtKill,
 		Killer: killerID,
 		Victim: victim.ID,
 		From:   [3]float32{victim.Position.X, victim.Position.Y, victim.Position.Z},
+		Streak: streak,
 	})
 
 	// Async DB writes (non-blocking).
@@ -346,6 +357,8 @@ func (e *Engine) updateRespawns() {
 			ship.IsAlive = true
 			ship.ShieldTimer = 0
 			ship.PrimaryWeapon.CoolTimer = 0
+			ship.SpawnProtection = 3.0 // 3 seconds of invulnerability
+			ship.KillStreak = 0
 			ship.Behavior = nil // clear behavior — player must re-prompt
 
 			// Reset prompt cooldown so player can immediately issue orders.

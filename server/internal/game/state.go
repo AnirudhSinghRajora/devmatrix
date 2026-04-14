@@ -150,9 +150,11 @@ type Ship struct {
 	RespawnTimer    float32 // countdown when dead
 	CollisionRadius float32          // bounding radius for broad-phase
 	HitShape        []CollisionSphere // compound narrow-phase hitbox
-	LastDamagedBy   string            // for kill credit
-	AITier          int               // LLM behavior tier (1-5)
-	HullID          string            // item ID for model selection
+	LastDamagedBy    string            // for kill credit
+	AITier           int               // LLM behavior tier (1-5)
+	HullID           string            // item ID for model selection
+	SpawnProtection  float32           // seconds of invulnerability remaining after respawn
+	KillStreak       int               // consecutive kills without dying
 }
 
 // HealthPct returns current health as a percentage 0–100.
@@ -189,6 +191,7 @@ type GameEvent struct {
 	Hit    bool       // whether it connected
 	Killer string     // for kill events
 	Victim string
+	Streak int // killer's current kill streak (kills only)
 }
 
 // Event type constants.

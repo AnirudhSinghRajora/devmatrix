@@ -109,7 +109,7 @@ export default function PromptInput() {
 
 const containerStyle: React.CSSProperties = {
   position: 'absolute',
-  bottom: 24,
+  bottom: 'max(24px, env(safe-area-inset-bottom, 0px))',
   left: '50%',
   transform: 'translateX(-50%)',
   display: 'flex',
@@ -118,7 +118,7 @@ const containerStyle: React.CSSProperties = {
   gap: 6,
   fontFamily: 'var(--hud-font)',
   zIndex: 10,
-  width: '95%',
+  width: 'min(95%, calc(100% - 32px))',
   maxWidth: 520,
 };
 

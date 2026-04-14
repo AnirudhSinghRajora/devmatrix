@@ -33,16 +33,9 @@ export default function AuthScreen({ onAuth, onSkip }: Props) {
   };
 
   return (
-    <div style={{
-      display: 'flex', justifyContent: 'center', alignItems: 'center',
-      height: '100vh', background: '#0a0a0f',
-      fontFamily: 'monospace', color: '#0f0',
-    }}>
-      <div style={{
-        background: 'rgba(0,20,0,0.8)', border: '1px solid #0f03',
-        borderRadius: 8, padding: 32, width: 340,
-      }}>
-        <h1 style={{ textAlign: 'center', fontSize: 24, marginBottom: 4 }}>DEVMATRIX</h1>
+    <div style={wrapperStyle}>
+      <div style={cardStyle}>
+        <h1 style={{ textAlign: 'center', fontSize: 'clamp(20px, 5vw, 24px)', marginBottom: 4 }}>DEVMATRIX</h1>
         <p style={{ textAlign: 'center', color: '#0a0', fontSize: 12, marginBottom: 24 }}>
           {mode === 'login' ? 'Sign in to your account' : 'Create a new account'}
         </p>
@@ -71,12 +64,7 @@ export default function AuthScreen({ onAuth, onSkip }: Props) {
             <div style={{ color: '#f44', fontSize: 12, marginBottom: 12 }}>{error}</div>
           )}
 
-          <button type="submit" disabled={loading} style={{
-            width: '100%', padding: '10px 0', background: '#0a0', color: '#000',
-            border: 'none', borderRadius: 4, cursor: 'pointer', fontFamily: 'monospace',
-            fontWeight: 'bold', fontSize: 14, marginBottom: 12,
-            opacity: loading ? 0.6 : 1,
-          }}>
+          <button type="submit" disabled={loading} style={submitStyle}>
             {loading ? '...' : mode === 'login' ? 'SIGN IN' : 'CREATE ACCOUNT'}
           </button>
         </form>
@@ -89,7 +77,7 @@ export default function AuthScreen({ onAuth, onSkip }: Props) {
         </div>
 
         <div style={{ textAlign: 'center', marginTop: 16, borderTop: '1px solid #0f02', paddingTop: 16 }}>
-          <button onClick={onSkip} style={linkStyle}>
+          <button onClick={onSkip} style={guestBtnStyle}>
             Play as Guest
           </button>
         </div>
@@ -98,14 +86,45 @@ export default function AuthScreen({ onAuth, onSkip }: Props) {
   );
 }
 
+const wrapperStyle: React.CSSProperties = {
+  display: 'flex', justifyContent: 'center', alignItems: 'center',
+  minHeight: '100vh', background: '#0a0a0f',
+  fontFamily: 'monospace', color: '#0f0',
+  padding: 16, boxSizing: 'border-box',
+};
+
+const cardStyle: React.CSSProperties = {
+  background: 'rgba(0,20,0,0.8)', border: '1px solid #0f03',
+  borderRadius: 8, padding: 'clamp(20px, 4vw, 32px)',
+  width: '100%', maxWidth: 340,
+  boxSizing: 'border-box',
+};
+
 const inputStyle: React.CSSProperties = {
-  width: '100%', padding: '10px 12px', marginBottom: 12,
+  width: '100%', padding: '12px 12px', marginBottom: 12,
   background: '#111', color: '#0f0', border: '1px solid #0f03',
   borderRadius: 4, fontFamily: 'monospace', fontSize: 14,
   boxSizing: 'border-box',
+  minHeight: 44,
+};
+
+const submitStyle: React.CSSProperties = {
+  width: '100%', padding: '12px 0', background: '#0a0', color: '#000',
+  border: 'none', borderRadius: 4, cursor: 'pointer', fontFamily: 'monospace',
+  fontWeight: 'bold', fontSize: 14, marginBottom: 12,
+  minHeight: 44,
 };
 
 const linkStyle: React.CSSProperties = {
   background: 'none', border: 'none', color: '#0a0', cursor: 'pointer',
-  fontFamily: 'monospace', fontSize: 12, textDecoration: 'underline',
+  fontFamily: 'monospace', fontSize: 13, textDecoration: 'underline',
+  padding: '8px 4px',
+  minHeight: 44, display: 'inline-flex', alignItems: 'center',
+};
+
+const guestBtnStyle: React.CSSProperties = {
+  background: 'none', border: '1px solid #0f03', color: '#0a0', cursor: 'pointer',
+  fontFamily: 'monospace', fontSize: 14, fontWeight: 'bold',
+  padding: '10px 24px', borderRadius: 4,
+  minHeight: 44,
 };

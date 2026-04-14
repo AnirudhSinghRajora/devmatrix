@@ -50,6 +50,7 @@ type GameEventWire struct {
 	Hit    bool       `msgpack:"h,omitempty"`
 	Killer string     `msgpack:"k,omitempty"`
 	Victim string     `msgpack:"v,omitempty"`
+	Streak int        `msgpack:"st,omitempty"` // killer's kill streak count
 }
 
 // StateUpdatePayload is the full world snapshot sent each tick.
