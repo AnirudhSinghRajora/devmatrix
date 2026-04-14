@@ -18,11 +18,11 @@ sudo apt install postgresql-16 postgresql-client-16
 
 # Create database and user
 sudo -u postgres psql
-CREATE DATABASE devmatrix;
-CREATE USER devmatrix_app WITH ENCRYPTED PASSWORD '<strong-password>';
-GRANT ALL PRIVILEGES ON DATABASE devmatrix TO devmatrix_app;
-\c devmatrix
-GRANT ALL ON SCHEMA public TO devmatrix_app;
+CREATE DATABASE skywalker;
+CREATE USER skywalker_app WITH ENCRYPTED PASSWORD '<strong-password>';
+GRANT ALL PRIVILEGES ON DATABASE skywalker TO skywalker_app;
+\c skywalker
+GRANT ALL ON SCHEMA public TO skywalker_app;
 ```
 
 For development, also available via Docker:
@@ -32,8 +32,8 @@ services:
   postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_DB: devmatrix
-      POSTGRES_USER: devmatrix_app
+      POSTGRES_DB: skywalker
+      POSTGRES_USER: skywalker_app
       POSTGRES_PASSWORD: dev_password
     ports:
       - "5432:5432"
@@ -81,7 +81,7 @@ func NewDB(ctx context.Context, connStr string) (*pgxpool.Pool, error) {
 
 Connection string from environment:
 ```
-DATABASE_URL=postgres://devmatrix_app:password@localhost:5432/devmatrix?sslmode=disable
+DATABASE_URL=postgres://skywalker_app:password@localhost:5432/skywalker?sslmode=disable
 ```
 
 ---

@@ -1,7 +1,7 @@
 package game
 
 import (
-	"github.com/DevMatrix/server/internal/db"
+	"github.com/SkyWalker/server/internal/db"
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
 )

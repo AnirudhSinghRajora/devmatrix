@@ -1,0 +1,32 @@
+[Unit]
+Description=SkyWalker Game Server
+After=network.target postgresql.service
+Wants=postgresql.service
+
+[Service]
+Type=simple
+User=Anirudh
+Group=Anirudh
+WorkingDirectory=/home/Anirudh/skywalker/server
+
+ExecStart=/home/Anirudh/skywalker/server/skywalker
+
+# Environment
+EnvironmentFile=/home/Anirudh/skywalker/server/.env
+
+# Restart on failure
+Restart=on-failure
+RestartSec=5s
+
+# Resource limits
+LimitNOFILE=65536
+
+# Security hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=false
+ReadWritePaths=/home/Anirudh/skywalker/server
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/DevMatrix/server/internal/auth"
-	"github.com/DevMatrix/server/internal/db"
+	"github.com/SkyWalker/server/internal/auth"
+	"github.com/SkyWalker/server/internal/db"
 	"github.com/rs/zerolog/log"
 )
 

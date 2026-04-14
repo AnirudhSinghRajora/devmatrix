@@ -1,8 +1,8 @@
-# DevMatrix — System Architecture & Technical Design
+# SkyWalker — System Architecture & Technical Design
 
 ## 1. Vision
 
-DevMatrix is a persistent, web-based 3D multiplayer game set in open space. Players command AI-driven spaceships not through direct input, but by writing natural language prompts that an LLM translates into structured behaviors. Ships act autonomously between prompts. Players earn currency by destroying opponents and spend it on hardware upgrades (weapons, shields, hull) and — critically — **AI Processor tiers** that unlock deeper LLM capabilities, creating a progression system that organically balances server-side compute load.
+SkyWalker is a persistent, web-based 3D multiplayer game set in open space. Players command AI-driven spaceships not through direct input, but by writing natural language prompts that an LLM translates into structured behaviors. Ships act autonomously between prompts. Players earn currency by destroying opponents and spend it on hardware upgrades (weapons, shields, hull) and — critically — **AI Processor tiers** that unlock deeper LLM capabilities, creating a progression system that organically balances server-side compute load.
 
 ---
 
@@ -85,10 +85,10 @@ DevMatrix is a persistent, web-based 3D multiplayer game set in open space. Play
 ## 4. Project Directory Structure
 
 ```
-DevMatrix/
+SkyWalker/
 ├── server/                          # Go game server
 │   ├── cmd/
-│   │   └── devmatrix/
+│   │   └── skywalker/
 │   │       └── main.go              # Entry point, wires everything together
 │   ├── internal/
 │   │   ├── config/

@@ -1,6 +1,6 @@
 import type { AuthResponse, LeaderboardEntry, PlayerProfile, ShopItem } from '../types';
 
-const TOKEN_KEY = 'devmatrix_token';
+const TOKEN_KEY = 'skywalker_token';
 
 export function getToken(): string | null {
   return localStorage.getItem(TOKEN_KEY);

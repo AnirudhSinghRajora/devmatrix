@@ -14,7 +14,7 @@ Stand up the entire development skeleton: a Go game server, a React + React Thre
 
 ```bash
 cd server/
-go mod init github.com/yourusername/devmatrix/server
+go mod init github.com/yourusername/skywalker/server
 ```
 
 **Key dependencies:**
@@ -25,7 +25,7 @@ go mod init github.com/yourusername/devmatrix/server
 | `github.com/vmihailenco/msgpack/v5` | MessagePack serialization | `go get github.com/vmihailenco/msgpack/v5` |
 | `github.com/rs/zerolog` | Structured logging (fast, zero-alloc) | `go get github.com/rs/zerolog` |
 
-### 2.2 Entry Point (`cmd/devmatrix/main.go`)
+### 2.2 Entry Point (`cmd/skywalker/main.go`)
 
 Responsibilities:
 - Parse config from environment variables (port, allowed origins)
@@ -386,7 +386,7 @@ const useGameStore = create<GameState>((set) => ({
 **Terminal 1 — Go server:**
 ```bash
 cd server/
-go run ./cmd/devmatrix/
+go run ./cmd/skywalker/
 # Starts on :8080
 ```
 
@@ -452,7 +452,7 @@ Phase 1 is **complete** when:
 
 ```
 server/
-├── cmd/devmatrix/main.go
+├── cmd/skywalker/main.go
 ├── internal/
 │   ├── config/config.go
 │   ├── game/engine.go

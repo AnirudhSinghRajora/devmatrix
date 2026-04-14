@@ -1,8 +1,8 @@
-# DevMatrix
+# SkyWalker
 
 ### You don't pilot your ship. You command it.
 
-DevMatrix is a real-time multiplayer space combat game where you never touch a joystick, never click to move, and never aim a shot. Instead, you type a command in plain English — and your ship figures out the rest.
+SkyWalker is a real-time multiplayer space combat game where you never touch a joystick, never click to move, and never aim a shot. Instead, you type a command in plain English — and your ship figures out the rest.
 
 ---
 
@@ -12,7 +12,7 @@ Most multiplayer games are competitions of reflexes. The fastest fingers win. Yo
 
 We wanted to build something different. A game where what you *think* matters more than how fast you can click. Where the way you describe a strategy is the actual skill.
 
-In DevMatrix, your words are your weapon.
+In SkyWalker, your words are your weapon.
 
 ---
 
@@ -72,7 +72,7 @@ And the most important upgrade of all: **your AI processor**. Better processors 
 
 ## The Vision
 
-We think natural language as a game mechanic is almost completely unexplored. DevMatrix is our attempt to show what that looks like — and how compelling it can be.
+We think natural language as a game mechanic is almost completely unexplored. SkyWalker is our attempt to show what that looks like — and how compelling it can be.
 
 As AI gets better, this game gets better. The more expressive the commands players can give, the deeper the strategy gets. There's room here for a whole new competitive meta — one built entirely around how well you can think, plan, and communicate under pressure.
 

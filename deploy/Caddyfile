@@ -1,8 +1,8 @@
-# Caddyfile — Reverse proxy for DevMatrix
-# Replace devmatrix.example.com with your actual domain.
+# Caddyfile — Reverse proxy for SkyWalker
+# Replace skywalker.example.com with your actual domain.
 # Caddy auto-provisions TLS via Let's Encrypt.
 
-devmatrix.anirudhrajora.dev {
+skywalker.anirudhrajora.dev {
     # WebSocket — must be first.
     handle /ws {
         reverse_proxy localhost:8080
@@ -23,7 +23,7 @@ devmatrix.anirudhrajora.dev {
 
     # SPA fallback: serve static files, fall back to index.html.
     handle {
-        root * /home/Anirudh/devmatrix/client/dist
+        root * /home/Anirudh/skywalker/client/dist
         try_files {path} /index.html
         file_server
     }

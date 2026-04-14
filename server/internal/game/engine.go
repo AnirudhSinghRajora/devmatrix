@@ -5,8 +5,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/DevMatrix/server/internal/db"
-	"github.com/DevMatrix/server/internal/network"
+	"github.com/SkyWalker/server/internal/db"
+	"github.com/SkyWalker/server/internal/network"
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
 )

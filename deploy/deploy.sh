@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# DevMatrix deployment script.
+# SkyWalker deployment script.
 # Usage: ./deploy.sh [host]
-#   host: SSH target (default: devmatrix-server)
+#   host: SSH target (default: skywalker-server)
 
-HOST="${1:-devmatrix-server}"
-REMOTE_DIR="/home/Anirudh/devmatrix"
+HOST="${1:-skywalker-server}"
+REMOTE_DIR="/home/Anirudh/skywalker"
 PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
-echo "=== DevMatrix Deploy ==="
+echo "=== SkyWalker Deploy ==="
 echo "Host:    $HOST"
 echo "Source:  $PROJECT_ROOT"
 
@@ -25,20 +25,20 @@ echo "Client build complete: dist/"
 echo ""
 echo "--- Building server ---"
 cd "$PROJECT_ROOT/server"
-CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o devmatrix ./cmd/devmatrix
-echo "Server binary: devmatrix"
+CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o skywalker ./cmd/skywalker
+echo "Server binary: skywalker"
 
 # 3. Upload artifacts.
 echo ""
 echo "--- Uploading ---"
 ssh "$HOST" "mkdir -p $REMOTE_DIR/server $REMOTE_DIR/client"
-scp "$PROJECT_ROOT/server/devmatrix" "$HOST:$REMOTE_DIR/server/devmatrix"
+scp "$PROJECT_ROOT/server/skywalker" "$HOST:$REMOTE_DIR/server/skywalker"
 rsync -az --delete "$PROJECT_ROOT/client/dist/" "$HOST:$REMOTE_DIR/client/dist/"
 
 # 4. Upload service and config files (only if they don't exist on remote).
-scp "$PROJECT_ROOT/deploy/devmatrix.service" "$HOST:/tmp/devmatrix.service"
+scp "$PROJECT_ROOT/deploy/skywalker.service" "$HOST:/tmp/skywalker.service"
 ssh "$HOST" "
-  sudo mv /tmp/devmatrix.service /etc/systemd/system/devmatrix.service
+  sudo mv /tmp/skywalker.service /etc/systemd/system/skywalker.service
   sudo systemctl daemon-reload
 "
 
@@ -52,7 +52,7 @@ ssh "$HOST" "
 # 6. Restart server.
 echo ""
 echo "--- Restarting server ---"
-ssh "$HOST" "sudo systemctl restart devmatrix"
+ssh "$HOST" "sudo systemctl restart skywalker"
 
 # 7. Health check.
 echo ""

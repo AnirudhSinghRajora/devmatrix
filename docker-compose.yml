@@ -2,8 +2,8 @@ services:
   postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_DB: devmatrix
-      POSTGRES_USER: devmatrix_app
+      POSTGRES_DB: skywalker
+      POSTGRES_USER: skywalker_app
       POSTGRES_PASSWORD: dev_password
     ports:
       - "5432:5432"

@@ -3,7 +3,7 @@ package llm
 import (
 	"strings"
 
-	"github.com/DevMatrix/server/internal/game"
+	"github.com/SkyWalker/server/internal/game"
 )
 
 // MockGenerate parses simple natural language commands into a BehaviorSet

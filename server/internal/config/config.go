@@ -81,12 +81,12 @@ func Load() *Config {
 		cfg.DatabaseURL = dbURL
 	} else {
 		// Dev default matching docker-compose.yml
-		cfg.DatabaseURL = "postgres://devmatrix_app:dev_password@localhost:5432/devmatrix?sslmode=disable"
+		cfg.DatabaseURL = "postgres://skywalker_app:dev_password@localhost:5432/skywalker?sslmode=disable"
 	}
 	if secret := os.Getenv("JWT_SECRET"); secret != "" {
 		cfg.JWTSecret = secret
 	} else {
-		cfg.JWTSecret = "devmatrix-dev-secret-change-in-prod"
+		cfg.JWTSecret = "skywalker-dev-secret-change-in-prod"
 	}
 
 	return cfg

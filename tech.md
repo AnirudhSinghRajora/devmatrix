@@ -1,12 +1,12 @@
-# How DevMatrix Works
+# How SkyWalker Works
 
-A breakdown of the system design, architecture, and the interesting engineering behind DevMatrix.
+A breakdown of the system design, architecture, and the interesting engineering behind SkyWalker.
 
 ---
 
 ## The Big Picture
 
-DevMatrix runs as one central authoritative game server that owns all state. Clients are pure renderers — they don't simulate anything, they just display what the server tells them. This keeps the game consistent for everyone and prevents cheating without any extra effort.
+SkyWalker runs as one central authoritative game server that owns all state. Clients are pure renderers — they don't simulate anything, they just display what the server tells them. This keeps the game consistent for everyone and prevents cheating without any extra effort.
 
 The stack is split into three main layers:
 

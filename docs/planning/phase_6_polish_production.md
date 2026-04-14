@@ -496,9 +496,9 @@ Everything runs on one GCP instance (cost-effective):
 ### 7.2 Caddy Configuration
 
 ```Caddyfile
-devmatrix.example.com {
+skywalker.example.com {
     # Serve React SPA
-    root * /opt/devmatrix/client/dist
+    root * /opt/skywalker/client/dist
     file_server
     try_files {path} /index.html
     
@@ -517,7 +517,7 @@ devmatrix.example.com {
         X-Content-Type-Options nosniff
         X-Frame-Options DENY
         Referrer-Policy strict-origin-when-cross-origin
-        Content-Security-Policy "default-src 'self'; connect-src 'self' wss://devmatrix.example.com; style-src 'self' 'unsafe-inline'; script-src 'self'"
+        Content-Security-Policy "default-src 'self'; connect-src 'self' wss://skywalker.example.com; style-src 'self' 'unsafe-inline'; script-src 'self'"
     }
     
     # Compression
@@ -531,18 +531,18 @@ Caddy handles HTTPS automatically via Let's Encrypt. Zero config TLS.
 
 **Go server:**
 ```ini
-# /etc/systemd/system/devmatrix.service
+# /etc/systemd/system/skywalker.service
 [Unit]
-Description=DevMatrix Game Server
+Description=SkyWalker Game Server
 After=network.target postgresql.service
 
 [Service]
 Type=simple
-User=devmatrix
-WorkingDirectory=/opt/devmatrix/server
-ExecStart=/opt/devmatrix/server/devmatrix
+User=skywalker
+WorkingDirectory=/opt/skywalker/server
+ExecStart=/opt/skywalker/server/skywalker
 Environment=PORT=8080
-Environment=DATABASE_URL=postgres://devmatrix_app:password@localhost:5432/devmatrix
+Environment=DATABASE_URL=postgres://skywalker_app:password@localhost:5432/skywalker
 Environment=JWT_SECRET=<generated-secret>
 Environment=LLM_URL=http://localhost:9000
 Restart=always
@@ -567,14 +567,14 @@ npm run build
 
 echo "=== Building server ==="
 cd ../server
-CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o devmatrix ./cmd/devmatrix/
+CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o skywalker ./cmd/skywalker/
 
 echo "=== Deploying ==="
-rsync -avz --delete client/dist/ user@server:/opt/devmatrix/client/dist/
-rsync -avz server/devmatrix user@server:/opt/devmatrix/server/
+rsync -avz --delete client/dist/ user@server:/opt/skywalker/client/dist/
+rsync -avz server/skywalker user@server:/opt/skywalker/server/
 
 echo "=== Restarting ==="
-ssh user@server "sudo systemctl restart devmatrix"
+ssh user@server "sudo systemctl restart skywalker"
 
 echo "=== Done ==="
 ```
@@ -714,7 +714,7 @@ PostgreSQL, JetStream, and the Go server all listen on localhost only.
 
 Phase 6 is **complete** when:
 
-> The game is deployed at `https://devmatrix.example.com` with automatic HTTPS. Players see 3D ship models (not cubes) flying through a star-filled space environment. Lasers glow, explosions burst with particles and light, shields flash blue on impact, and engines leave trails. The UI is clean and readable with a sci-fi aesthetic. Sound effects accompany key events. The server runs continuously via systemd with automatic restarts. A load test with 50 simulated players maintains 30 TPS with <15ms tick time. The monitoring endpoint confirms system health. The game is ready for public access.
+> The game is deployed at `https://skywalker.example.com` with automatic HTTPS. Players see 3D ship models (not cubes) flying through a star-filled space environment. Lasers glow, explosions burst with particles and light, shields flash blue on impact, and engines leave trails. The UI is clean and readable with a sci-fi aesthetic. Sound effects accompany key events. The server runs continuously via systemd with automatic restarts. A load test with 50 simulated players maintains 30 TPS with <15ms tick time. The monitoring endpoint confirms system health. The game is ready for public access.
 
 ---
 

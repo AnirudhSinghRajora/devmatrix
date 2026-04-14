@@ -1,4 +1,4 @@
-# CLAUDE.md — DevMatrix Codebase Context
+# CLAUDE.md — SkyWalker Codebase Context
 
 This file gives an AI assistant everything it needs to work efficiently in this repo without re-exploring the codebase from scratch each time.
 
@@ -6,7 +6,7 @@ This file gives an AI assistant everything it needs to work efficiently in this 
 
 ## What This Project Is
 
-**DevMatrix** is a real-time multiplayer 3D space combat game where players command AI-controlled ships using natural language. Players type plain-English instructions (e.g. "orbit the nearest enemy and fire"), a self-hosted LLM translates them into structured JSON behaviors, and the ships execute those behaviors autonomously in a live arena.
+**SkyWalker** is a real-time multiplayer 3D space combat game where players command AI-controlled ships using natural language. Players type plain-English instructions (e.g. "orbit the nearest enemy and fire"), a self-hosted LLM translates them into structured JSON behaviors, and the ships execute those behaviors autonomously in a live arena.
 
 Core loop: `type command → LLM parses it → ship executes behaviors → fight other players → earn coins → upgrade ship/AI processor → unlock more complex tactics`
 
@@ -15,10 +15,10 @@ Core loop: `type command → LLM parses it → ship executes behaviors → fight
 ## Repo Structure
 
 ```
-devmatrix/
+skywalker/
 ├── client/          # React + Three.js SPA (TypeScript)
 ├── server/          # Go game server (authoritative)
-│   ├── cmd/devmatrix/main.go     # Entry point
+│   ├── cmd/skywalker/main.go     # Entry point
 │   └── internal/
 │       ├── api/       # HTTP REST handlers (register, login, shop, profile)
 │       ├── auth/      # JWT auth service + bcrypt password hashing
@@ -60,12 +60,12 @@ devmatrix/
 ```bash
 docker compose up -d
 ```
-Postgres starts on port 5432. Credentials: `devmatrix_app` / `dev_password` / db `devmatrix`.
+Postgres starts on port 5432. Credentials: `skywalker_app` / `dev_password` / db `skywalker`.
 
 ### 2. Run the server (mock LLM mode — no TPU needed)
 ```bash
 cd server
-go run ./cmd/devmatrix
+go run ./cmd/skywalker
 ```
 Server starts on `:8080`. With no `LLM_URL` env var set, it uses the keyword-based mock parser automatically. DB migrations are embedded and run on startup.
 
@@ -79,7 +79,7 @@ Vite dev server starts on `http://localhost:5173`. The client connects to the se
 
 ### 4. Run with a real LLM endpoint
 ```bash
-LLM_URL=http://localhost:8000 LLM_MODEL=gemma-2-9b-it go run ./cmd/devmatrix
+LLM_URL=http://localhost:8000 LLM_MODEL=gemma-2-9b-it go run ./cmd/skywalker
 ```
 
 ---
@@ -89,8 +89,8 @@ LLM_URL=http://localhost:8000 LLM_MODEL=gemma-2-9b-it go run ./cmd/devmatrix
 | Variable | Default | Description |
 |---|---|---|
 | `PORT` | `8080` | HTTP/WS server port |
-| `DATABASE_URL` | `postgres://devmatrix_app:dev_password@localhost:5432/devmatrix?sslmode=disable` | Postgres DSN |
-| `JWT_SECRET` | `devmatrix-dev-secret-change-in-prod` | JWT signing key |
+| `DATABASE_URL` | `postgres://skywalker_app:dev_password@localhost:5432/skywalker?sslmode=disable` | Postgres DSN |
+| `JWT_SECRET` | `skywalker-dev-secret-change-in-prod` | JWT signing key |
 | `LLM_URL` | `""` (mock mode) | LLM HTTP endpoint (OpenAI-compatible) |
 | `LLM_MODEL` | `""` | Model name for `/v1/chat/completions` |
 | `LLM_WORKERS` | `4` | Concurrent LLM goroutines |
@@ -167,13 +167,13 @@ Migrations live at `server/internal/db/migrations/` and run automatically on ser
 cd client && npm run build   # outputs to client/dist/
 
 # Build server binary (Linux amd64 for deployment)
-cd server && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o devmatrix ./cmd/devmatrix
+cd server && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o skywalker ./cmd/skywalker
 
 # Full deploy (SSH to production)
-./deploy/deploy.sh devmatrix-server
+./deploy/deploy.sh skywalker-server
 ```
 
-Production runs on GCP. Caddy handles TLS (auto via Let's Encrypt) and proxies `/ws`, `/api/*`, `/health` to the Go server on `:8080`. Static client files served from `/home/Anirudh/devmatrix/client/dist`. Postgres runs in Docker on the same machine. LLM inference server (JetStream) runs on `localhost:8000` via attached TPU.
+Production runs on GCP. Caddy handles TLS (auto via Let's Encrypt) and proxies `/ws`, `/api/*`, `/health` to the Go server on `:8080`. Static client files served from `/home/Anirudh/skywalker/client/dist`. Postgres runs in Docker on the same machine. LLM inference server (JetStream) runs on `localhost:8000` via attached TPU.
 
 ---
 
@@ -189,7 +189,7 @@ Production runs on GCP. Caddy handles TLS (auto via Let's Encrypt) and proxies `
 | Modify combat damage/shield math | `server/internal/game/combat.go` |
 | Add a new HUD component | `client/src/components/` + mount in `App.tsx` |
 | Change ship physics | `server/internal/game/movement.go` (thrust/drag/boundary) |
-| Add a new API endpoint | `server/internal/api/handler.go` + register route in `server/cmd/devmatrix/main.go` |
+| Add a new API endpoint | `server/internal/api/handler.go` + register route in `server/cmd/skywalker/main.go` |
 | Adjust collision shapes | `server/internal/game/hitshape.go` |
 
 ---

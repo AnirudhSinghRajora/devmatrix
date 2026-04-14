@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/DevMatrix/server/internal/game"
+	"github.com/SkyWalker/server/internal/game"
 	"github.com/rs/zerolog/log"
 )
 
